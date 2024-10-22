@@ -54,7 +54,9 @@ const ChatArea = ({ bottomBarRef }) => {
         ) : (
           messages.map((message, index) => (
             <View key={index} style={[styles.messageBubble, message.role === 'user' ? styles.userMessage : styles.aiMessage]}>
-              <Text style={styles.messageText}>{message.content}</Text>
+              <Text style={[styles.messageText, message.role === 'user' ? styles.userMessageText : null]}>
+                {message.content}
+              </Text>
             </View>
           ))
         )}
@@ -88,6 +90,9 @@ const styles = StyleSheet.create({
   },
   messageText: {
     color: '#000',
+  },
+  userMessageText: {
+    color: '#fff',
   },
   emptyChatContainer: {
     flex: 1,
