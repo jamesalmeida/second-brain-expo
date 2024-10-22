@@ -1,13 +1,13 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { View, useColorScheme, SafeAreaView, Image, TouchableOpacity, Text } from 'react-native';
+import { View, useColorScheme, SafeAreaView, Image, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { NavigationContainer } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { SafeAreaView as SafeAreaViewContext } from 'react-native-safe-area-context';
-
+import BottomBar from './components/BottomBar';
 const Drawer = createDrawerNavigator();
 
 function HomeScreen({ navigation, setOpenSettings, isDarkMode, toggleDarkMode }) {
@@ -63,6 +63,7 @@ function HomeScreen({ navigation, setOpenSettings, isDarkMode, toggleDarkMode })
           resizeMode="contain"
         />
       </View>
+      <BottomBar isDarkMode={isDarkMode} />
       <BottomSheet
         ref={bottomSheetRef}
         index={-1}
@@ -71,11 +72,32 @@ function HomeScreen({ navigation, setOpenSettings, isDarkMode, toggleDarkMode })
         enablePanDownToClose={true}
         backdropComponent={renderBackdrop}
       >
-        <BottomSheetView style={{ flex: 1, alignItems: 'center', backgroundColor: isDarkMode ? 'black' : 'white' }}>
-          <Text style={{ color: isDarkMode ? 'white' : 'black' }}>Settings</Text>
+        <BottomSheetView style={[styles.bottomSheetContent, { backgroundColor: isDarkMode ? 'black' : 'white' }]}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => bottomSheetRef.current?.close()}
+          >
+            <Ionicons name="close-circle-outline" size={30} color={isDarkMode ? 'white' : 'black'} />
+          </TouchableOpacity>
+          <Text style={[styles.settingsTitle, { color: isDarkMode ? 'white' : 'black' }]}>Settings</Text>
           <TouchableOpacity onPress={toggleDarkMode}>
             <Text style={{ color: isDarkMode ? 'white' : 'black' }}>
               {isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Text style={{ color: isDarkMode ? 'white' : 'black' }}>
+              AI Voice On/Off
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Text style={{ color: isDarkMode ? 'white' : 'black' }}>
+              Choose AI Voice 
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Text style={{ color: isDarkMode ? 'white' : 'black' }}>
+              AI Voice Speed
             </Text>
           </TouchableOpacity>
           {/* TODO: Add more settings options */}
@@ -85,7 +107,26 @@ function HomeScreen({ navigation, setOpenSettings, isDarkMode, toggleDarkMode })
   );
 }
 
-function CustomDrawerContent({ openSettings }) {
+const styles = StyleSheet.create({
+  bottomSheetContent: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: 20,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1,
+  },
+  settingsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+});
+
+function HamburgerMenu({ openSettings }) {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={{ flex: 1, paddingTop: 20, paddingLeft: 20 }}>
@@ -109,7 +150,7 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer>
         <Drawer.Navigator
-          drawerContent={(props) => <CustomDrawerContent {...props} openSettings={openSettings} />}
+          drawerContent={(props) => <HamburgerMenu {...props} openSettings={openSettings} />}
           screenOptions={{
             drawerStyle: {
               width: '85%',
