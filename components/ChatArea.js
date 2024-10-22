@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Image, Keyboard } from 'react-native';
 import { useChat } from '../ChatContext';
 import logo from '../assets/images/brain-gray.png'; // Adjust the path as necessary
 
@@ -11,8 +11,19 @@ const ChatArea = () => {
   const messages = currentChat ? currentChat.messages : [];
 
   useEffect(() => {
-    scrollViewRef.current.scrollToEnd({ animated: true });
+    scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
+
+  const handleScrollEndDrag = (event) => {
+    const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+    const paddingToBottom = 20;
+    
+    if (contentOffset.y <= 0) {
+      Keyboard.dismiss();
+    } else if (contentOffset.y + layoutMeasurement.height >= contentSize.height - paddingToBottom) {
+      // User has scrolled to the bottom, you can add additional logic here if needed
+    }
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -23,7 +34,8 @@ const ChatArea = () => {
       <ScrollView
         ref={scrollViewRef}
         contentContainerStyle={styles.scrollViewContent}
-        onContentSizeChange={() => scrollViewRef.current.scrollToEnd({ animated: true })}
+        onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        onScrollEndDrag={handleScrollEndDrag}
       >
         {messages.length === 0 ? (
           <View style={styles.emptyChatContainer}>
@@ -66,9 +78,6 @@ const styles = StyleSheet.create({
   },
   messageText: {
     color: '#000',
-  },
-  userMessageText: {
-    color: '#fff',
   },
   emptyChatContainer: {
     flex: 1,
