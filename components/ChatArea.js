@@ -1,18 +1,27 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Image, Keyboard } from 'react-native';
 import { useChat } from '../ChatContext';
 import logo from '../assets/images/brain-gray.png'; // Adjust the path as necessary
 
-const ChatArea = () => {
+const ChatArea = ({ bottomBarRef }) => {
   const { chats, currentChatId } = useChat();
   const scrollViewRef = useRef();
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
   const currentChat = chats.find(chat => chat.id === currentChatId);
   const messages = currentChat ? currentChat.messages : [];
 
   useEffect(() => {
-    scrollViewRef.current?.scrollToEnd({ animated: true });
-  }, [messages]);
+    if (isAtBottom) {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }
+  }, [messages, isAtBottom]);
+
+  const handleScroll = (event) => {
+    const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+    const paddingToBottom = 20;
+    setIsAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - paddingToBottom);
+  };
 
   const handleScrollEndDrag = (event) => {
     const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
@@ -21,7 +30,7 @@ const ChatArea = () => {
     if (contentOffset.y <= 0) {
       Keyboard.dismiss();
     } else if (contentOffset.y + layoutMeasurement.height >= contentSize.height - paddingToBottom) {
-      // User has scrolled to the bottom, you can add additional logic here if needed
+      bottomBarRef.current?.focusInput();
     }
   };
 
@@ -35,6 +44,7 @@ const ChatArea = () => {
         ref={scrollViewRef}
         contentContainerStyle={styles.scrollViewContent}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        onScroll={handleScroll}
         onScrollEndDrag={handleScrollEndDrag}
       >
         {messages.length === 0 ? (

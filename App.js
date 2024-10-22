@@ -22,6 +22,7 @@ export default function App() {
   });
   const [isDarkMode, setIsDarkMode] = useState(false);
   const bottomSheetRef = useRef(null);
+  const bottomBarRef = useRef(null);
 
   const snapPoints = useMemo(() => ['92%'], []);
 
@@ -87,8 +88,8 @@ export default function App() {
                       style={{ flex: 1 }}
                       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
                     >
-                      <ChatArea />
-                      <BottomBar isDarkMode={isDarkMode} />
+                      <ChatArea bottomBarRef={bottomBarRef} />
+                      <BottomBar ref={bottomBarRef} isDarkMode={isDarkMode} />
                     </KeyboardAvoidingView>
                     <Settings
                       bottomSheetRef={bottomSheetRef}

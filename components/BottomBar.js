@@ -1,14 +1,21 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../ChatContext';
 
-const BottomBar = ({ isDarkMode }) => {
+const BottomBar = forwardRef(({ isDarkMode }, ref) => {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const { sendMessageToOpenAI } = useChat();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const inputRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    focusInput: () => {
+      inputRef.current?.focus();
+    }
+  }));
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -37,6 +44,7 @@ const BottomBar = ({ isDarkMode }) => {
           <Ionicons name="add-circle-outline" size={24} color={isDarkMode ? '#fff' : '#000'} />
         </TouchableOpacity>
         <TextInput
+          ref={inputRef}
           style={[styles.input, { color: isDarkMode ? '#fff' : '#000' }]}
           placeholder="Message"
           placeholderTextColor={isDarkMode ? '#888' : '#999'}
@@ -65,7 +73,7 @@ const BottomBar = ({ isDarkMode }) => {
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
