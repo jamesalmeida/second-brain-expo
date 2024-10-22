@@ -14,23 +14,19 @@ const ChatArea = () => {
   }, [messages]);
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-      keyboardVerticalOffset={100} // Adjust this value as needed
+    <ScrollView
+      ref={scrollViewRef}
+      contentContainerStyle={styles.scrollViewContent}
+      onContentSizeChange={() => scrollViewRef.current.scrollToEnd({ animated: true })}
     >
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={styles.scrollViewContent}
-        onContentSizeChange={() => scrollViewRef.current.scrollToEnd({ animated: true })}
-      >
-        {messages.map((message, index) => (
-          <View key={index} style={[styles.messageBubble, message.role === 'user' ? styles.userMessage : styles.aiMessage]}>
-            <Text style={styles.messageText}>{message.content}</Text>
-          </View>
-        ))}
-      </ScrollView>
-    </KeyboardAvoidingView>
+      {messages.map((message, index) => (
+        <View key={index} style={[styles.messageBubble, message.role === 'user' ? styles.userMessage : styles.aiMessage]}>
+          <Text style={[styles.messageText, message.role === 'user' ? styles.userMessageText : null]}>
+            {message.content}
+          </Text>
+        </View>
+      ))}
+    </ScrollView>
   );
 };
 
@@ -59,6 +55,9 @@ const styles = StyleSheet.create({
   },
   messageText: {
     color: '#000',
+  },
+  userMessageText: {
+    color: '#fff',
   },
 });
 

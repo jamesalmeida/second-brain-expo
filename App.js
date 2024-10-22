@@ -10,6 +10,8 @@ import ChatArea from './components/ChatArea';
 import HamburgerMenu from './components/HamburgerMenu';
 import BottomBar from './components/BottomBar';
 import { ChatProvider, useChat } from './ChatContext';
+import { Platform } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native';
 
 const Drawer = createDrawerNavigator();
 
@@ -77,10 +79,14 @@ export default function App() {
                       setCurrentModel={setCurrentModel} // Use setCurrentModel from context
                       isDarkMode={isDarkMode} 
                     />
-                    <View style={{ flex: 1 }}>
+                    <KeyboardAvoidingView 
+                      behavior={Platform.OS === "ios" ? "padding" : "height"}
+                      style={{ flex: 1 }}
+                      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+                    >
                       <ChatArea />
                       <BottomBar isDarkMode={isDarkMode} />
-                    </View>
+                    </KeyboardAvoidingView>
                     <Settings
                       bottomSheetRef={bottomSheetRef}
                       snapPoints={snapPoints}

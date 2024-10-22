@@ -31,7 +31,7 @@ const BottomBar = ({ isDarkMode }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isDarkMode ? 'black' : 'white' }]}>
       <View style={[styles.inputContainer, { borderColor: isDarkMode ? '#444' : '#ccc' }]}>
         <TouchableOpacity onPress={() => {/* TODO: Implement attachment functionality */}} style={styles.iconButton}>
           <Ionicons name="add-circle-outline" size={24} color={isDarkMode ? '#fff' : '#000'} />
@@ -70,7 +70,8 @@ const BottomBar = ({ isDarkMode }) => {
 const styles = StyleSheet.create({
   container: {
     padding: 10,
-    backgroundColor: 'transparent',
+    // borderTopWidth: 1,
+    // borderTopColor: '#ccc',
   },
   inputContainer: {
     flexDirection: 'row',
