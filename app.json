@@ -1,4 +1,11 @@
 {
-  "name": "second-brain-expo",
-  "slug": "second-brain-expo"
+  "expo": {
+    "name": "Second Brain",
+    "slug": "second-brain",
+    "icon": "./assets/images/icon.png", 
+    "web": {
+      "favicon": "./assets/images/favicon.png",
+      "name": "Second Brain"
+    }
+  }
 }

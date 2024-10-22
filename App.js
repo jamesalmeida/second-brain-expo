@@ -66,17 +66,20 @@ export default function App() {
             }}
           >
             <Drawer.Screen 
-              name="Settings" 
-              options={{ headerShown: false }}
+              name="Home" 
+              options={{ 
+                headerShown: false,
+                title: "Second Brain"
+              }}
             >
               {({ navigation }) => {
-                const { currentModel, setCurrentModel } = useChat(); // Access currentModel from context
+                const { currentModel, setCurrentModel } = useChat();
                 return (
                   <SafeAreaView style={{ flex: 1, backgroundColor: isDarkMode ? 'black' : 'white' }}>
                     <Header 
                       navigation={navigation} 
-                      currentModel={currentModel} // Use currentModel from context
-                      setCurrentModel={setCurrentModel} // Use setCurrentModel from context
+                      currentModel={currentModel}
+                      setCurrentModel={setCurrentModel}
                       isDarkMode={isDarkMode} 
                     />
                     <KeyboardAvoidingView 
