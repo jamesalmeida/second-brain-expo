@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useChat } from '../ChatContext';
+import logo from '../assets/images/brain-gray.png'; // Adjust the path as necessary
 
 const ChatArea = () => {
   const { chats, currentChatId } = useChat();
@@ -14,19 +15,29 @@ const ChatArea = () => {
   }, [messages]);
 
   return (
-    <ScrollView
-      ref={scrollViewRef}
-      contentContainerStyle={styles.scrollViewContent}
-      onContentSizeChange={() => scrollViewRef.current.scrollToEnd({ animated: true })}
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+      keyboardVerticalOffset={100}
     >
-      {messages.map((message, index) => (
-        <View key={index} style={[styles.messageBubble, message.role === 'user' ? styles.userMessage : styles.aiMessage]}>
-          <Text style={[styles.messageText, message.role === 'user' ? styles.userMessageText : null]}>
-            {message.content}
-          </Text>
-        </View>
-      ))}
-    </ScrollView>
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollViewContent}
+        onContentSizeChange={() => scrollViewRef.current.scrollToEnd({ animated: true })}
+      >
+        {messages.length === 0 ? (
+          <View style={styles.emptyChatContainer}>
+            <Image source={logo} style={styles.logo} />
+          </View>
+        ) : (
+          messages.map((message, index) => (
+            <View key={index} style={[styles.messageBubble, message.role === 'user' ? styles.userMessage : styles.aiMessage]}>
+              <Text style={styles.messageText}>{message.content}</Text>
+            </View>
+          ))
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -58,6 +69,16 @@ const styles = StyleSheet.create({
   },
   userMessageText: {
     color: '#fff',
+  },
+  emptyChatContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logo: {
+    width: 100, // Adjust size as needed
+    height: 100, // Adjust size as needed
+    resizeMode: 'contain',
   },
 });
 
