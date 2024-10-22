@@ -59,8 +59,8 @@ Second Brain Expo is a WIP built with React Native and Expo, designed to serve a
 
 - This project uses the Reanimated 2 library. Make sure to follow the [installation instructions](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/installation) carefully.
 
+Contributions, issues, and feature requests are welcome! Feel free to check [issues page](https://github.com/yourusername/second-brain-expo/issues).
 
 ## 📜 License
 
-This project is [MIT](https://choosealicense.com/licenses/mit/) licensed.
-
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE.md) file for details.
