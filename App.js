@@ -52,7 +52,8 @@ export default function App() {
               <HamburgerMenu 
                 {...props} 
                 openSettings={() => openSettings(props.navigation)} 
-                isDarkMode={isDarkMode} 
+                isDarkMode={isDarkMode}
+                navigation={props.navigation}
               />
             )}
             screenOptions={{

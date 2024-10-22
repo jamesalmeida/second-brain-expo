@@ -3,8 +3,11 @@ import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } fr
 import { useChat } from '../ChatContext';
 
 const ChatArea = () => {
-  const { messages } = useChat();
+  const { chats, currentChatId } = useChat();
   const scrollViewRef = useRef();
+
+  const currentChat = chats.find(chat => chat.id === currentChatId);
+  const messages = currentChat ? currentChat.messages : [];
 
   useEffect(() => {
     scrollViewRef.current.scrollToEnd({ animated: true });

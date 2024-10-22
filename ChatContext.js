@@ -1,14 +1,35 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { OPENAI_API_KEY } from '@env';
 
 const ChatContext = createContext();
 
 export const ChatProvider = ({ children }) => {
-  const [messages, setMessages] = useState([]);
+  const [chats, setChats] = useState([]);
+  const [currentChatId, setCurrentChatId] = useState(null);
+
+  useEffect(() => {
+    if (chats.length === 0) {
+      createNewChat();
+    }
+  }, []);
+
+  const createNewChat = () => {
+    const newChat = {
+      id: Date.now().toString(),
+      title: new Date().toLocaleString(),
+      messages: []
+    };
+    setChats(prevChats => [...prevChats, newChat]);
+    setCurrentChatId(newChat.id);
+  };
 
   const addMessage = (role, content) => {
-    setMessages((prevMessages) => [...prevMessages, { role, content }]);
+    setChats(prevChats => prevChats.map(chat => 
+      chat.id === currentChatId 
+        ? { ...chat, messages: [...chat.messages, { role, content }] }
+        : chat
+    ));
   };
 
   const sendMessageToOpenAI = async (userMessage) => {
@@ -21,7 +42,7 @@ export const ChatProvider = ({ children }) => {
           model: 'gpt-3.5-turbo',
           messages: [
             { role: 'system', content: 'You are a helpful assistant.' },
-            ...messages,
+            ...chats.find(chat => chat.id === currentChatId).messages,
             { role: 'user', content: userMessage },
           ],
         },
@@ -42,7 +63,7 @@ export const ChatProvider = ({ children }) => {
   };
 
   return (
-    <ChatContext.Provider value={{ messages, addMessage, sendMessageToOpenAI }}>
+    <ChatContext.Provider value={{ chats, currentChatId, createNewChat, addMessage, sendMessageToOpenAI, setCurrentChatId }}>
       {children}
     </ChatContext.Provider>
   );
