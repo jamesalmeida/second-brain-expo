@@ -9,7 +9,7 @@ import Settings from './components/Settings';
 import ChatArea from './components/ChatArea';
 import HamburgerMenu from './components/HamburgerMenu';
 import BottomBar from './components/BottomBar';
-import { ChatProvider } from './ChatContext';
+import { ChatProvider, useChat } from './ChatContext';
 
 const Drawer = createDrawerNavigator();
 
@@ -19,7 +19,6 @@ export default function App() {
     bottomSheetRef.current?.expand();
   });
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [currentModel, setCurrentModel] = useState('GPT-4');
   const bottomSheetRef = useRef(null);
 
   const snapPoints = useMemo(() => ['92%'], []);
@@ -68,23 +67,31 @@ export default function App() {
               name="Settings" 
               options={{ headerShown: false }}
             >
-              {({ navigation }) => (
-                <SafeAreaView style={{ flex: 1, backgroundColor: isDarkMode ? 'black' : 'white' }}>
-                  <Header navigation={navigation} currentModel={currentModel} isDarkMode={isDarkMode} />
-                  <View style={{ flex: 1 }}>
-                    <ChatArea />
-                    <BottomBar isDarkMode={isDarkMode} />
-                  </View>
-                  <Settings
-                    bottomSheetRef={bottomSheetRef}
-                    snapPoints={snapPoints}
-                    handleSheetChanges={handleSheetChanges}
-                    renderBackdrop={renderBackdrop}
-                    isDarkMode={isDarkMode}
-                    toggleDarkMode={toggleDarkMode}
-                  />
-                </SafeAreaView>
-              )}
+              {({ navigation }) => {
+                const { currentModel, setCurrentModel } = useChat(); // Access currentModel from context
+                return (
+                  <SafeAreaView style={{ flex: 1, backgroundColor: isDarkMode ? 'black' : 'white' }}>
+                    <Header 
+                      navigation={navigation} 
+                      currentModel={currentModel} // Use currentModel from context
+                      setCurrentModel={setCurrentModel} // Use setCurrentModel from context
+                      isDarkMode={isDarkMode} 
+                    />
+                    <View style={{ flex: 1 }}>
+                      <ChatArea />
+                      <BottomBar isDarkMode={isDarkMode} />
+                    </View>
+                    <Settings
+                      bottomSheetRef={bottomSheetRef}
+                      snapPoints={snapPoints}
+                      handleSheetChanges={handleSheetChanges}
+                      renderBackdrop={renderBackdrop}
+                      isDarkMode={isDarkMode}
+                      toggleDarkMode={toggleDarkMode}
+                    />
+                  </SafeAreaView>
+                );
+              }}
             </Drawer.Screen>
           </Drawer.Navigator>
         </NavigationContainer>
