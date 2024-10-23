@@ -1,11 +1,24 @@
 {
   "expo": {
-    "name": "Second Brain",
+    "name": "Second Brain - Organize Your Thoughts",
     "slug": "second-brain",
-    "icon": "./assets/images/icon.png", 
+    "icon": "./assets/images/icon.png",
     "web": {
       "favicon": "./assets/images/favicon.png",
       "name": "Second Brain"
+    },
+    "ios": {
+      "infoPlist": {
+        "UIFileSharingEnabled": true,
+        "LSSupportsOpeningDocumentsInPlace": true,
+        "UISupportsDocumentBrowser": true
+      },
+      "bundleIdentifier": "com.jamesadev.secondbrain"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "099473b6-1fc9-4247-9cd4-100e9325e2ba"
+      }
     }
   }
 }

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { OPENAI_API_KEY } from '@env';
+import * as FileSystem from 'expo-file-system';
 
 const ChatContext = createContext();
 
@@ -16,49 +17,105 @@ export const ChatProvider = ({ children }) => {
     setCurrentModel(newModel);
   };
 
+  const chatDirectory = FileSystem.documentDirectory + 'chats/';
+
   useEffect(() => {
-    if (chats.length === 0) {
-      createNewChat();
-    }
-    fetchAvailableModels();
+    const initializeChats = async () => {
+      await ensureChatDirectoryExists();
+      const loadedChats = await loadChats();
+      if (loadedChats.length > 0) {
+        setChats(loadedChats);
+        setCurrentChatId(loadedChats[loadedChats.length - 1].id);
+      } else {
+        createNewChat();
+      }
+      fetchAvailableModels();
+    };
+    initializeChats();
   }, []);
 
-  const createNewChat = () => {
+  const ensureChatDirectoryExists = async () => {
+    const dirInfo = await FileSystem.getInfoAsync(chatDirectory);
+    if (!dirInfo.exists) {
+      await FileSystem.makeDirectoryAsync(chatDirectory, { intermediates: true });
+    }
+  };
+
+  const saveChat = async (chat) => {
+    try {
+      const fileName = `${chat.id}.json`;
+      const filePath = chatDirectory + fileName;
+      console.log('Saving chat:', chat);
+      await FileSystem.writeAsStringAsync(filePath, JSON.stringify(chat), { encoding: FileSystem.EncodingType.UTF8 });
+      console.log('Chat saved successfully');
+    } catch (e) {
+      console.error('Error saving chat', e);
+    }
+  };
+
+  const loadChats = async () => {
+    try {
+      const files = await FileSystem.readDirectoryAsync(chatDirectory);
+      const chats = await Promise.all(
+        files.map(async (file) => {
+          const content = await FileSystem.readAsStringAsync(chatDirectory + file, { encoding: FileSystem.EncodingType.UTF8 });
+          return JSON.parse(content);
+        })
+      );
+      return chats.sort((a, b) => a.id - b.id);
+    } catch (e) {
+      console.error('Error loading chats', e);
+      return [];
+    }
+  };
+
+  const createNewChat = async () => {
     const newChat = {
       id: Date.now().toString(),
       title: new Date().toLocaleString(),
       messages: []
     };
+    await saveChat(newChat);
     setChats(prevChats => [...prevChats, newChat]);
     setCurrentChatId(newChat.id);
   };
 
-  const addMessage = (role, content) => {
-    setChats(prevChats => prevChats.map(chat => 
+  const addMessage = async (role, content) => {
+    const updatedChats = chats.map(chat => 
       chat.id === currentChatId 
         ? { ...chat, messages: [...chat.messages, { role, content }] }
         : chat
-    ));
+    );
+    const updatedChat = updatedChats.find(chat => chat.id === currentChatId);
+    await saveChat(updatedChat);
+    setChats(updatedChats);
   };
 
   const sendMessageToOpenAI = async (userMessage) => {
-    addMessage('user', userMessage);
+    // Add user message to the chat
+    const updatedChatsWithUserMessage = chats.map(chat => 
+      chat.id === currentChatId 
+        ? { ...chat, messages: [...chat.messages, { role: 'user', content: userMessage }] }
+        : chat
+    );
+    setChats(updatedChatsWithUserMessage);
 
     try {
-      // Use the currentModel directly from state
       const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
       console.log('modelMap in ChatContext:', modelMap);
       console.log('Using model inside ChatContext:', apiModel);
+
+      const currentChat = updatedChatsWithUserMessage.find(chat => chat.id === currentChatId);
+      const messages = [
+        { role: 'system', content: 'You are a helpful assistant but you are also a bit sarcastic. Avoid pleasantries and be direct unless the situation calls for it.' },
+        ...currentChat.messages,
+      ];
 
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
           model: apiModel,
-          messages: [
-            { role: 'system', content: 'You are a helpful assistant but you are also a bit sarcastic. Avoid pleasantries and be direct unless the situation calls for it.' },
-            ...chats.find(chat => chat.id === currentChatId).messages,
-            { role: 'user', content: userMessage },
-          ],
+          messages: messages,
         },
         {
           headers: {
@@ -72,10 +129,28 @@ export const ChatProvider = ({ children }) => {
       console.log('Used model:', apiModel);
 
       const aiMessage = response.data.choices[0].message.content;
-      addMessage('assistant', aiMessage);
+
+      // Add AI response to the chat
+      const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
+        chat.id === currentChatId 
+          ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
+          : chat
+      );
+      setChats(updatedChatsWithAIResponse);
+
+      // Save the updated chat
+      const updatedChat = updatedChatsWithAIResponse.find(chat => chat.id === currentChatId);
+      await saveChat(updatedChat);
     } catch (error) {
       console.error('Error sending message to OpenAI:', error);
-      addMessage('assistant', 'Sorry, I encountered an error. Please try again.');
+      // Add error message to the chat
+      const updatedChatsWithError = updatedChatsWithUserMessage.map(chat => 
+        chat.id === currentChatId 
+          ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }] }
+          : chat
+      );
+      setChats(updatedChatsWithError);
+      await saveChat(updatedChatsWithError.find(chat => chat.id === currentChatId));
     }
   };
 
