@@ -1,10 +1,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useChat } from '../ChatContext';
+import { useChat } from '../contexts/ChatContext';
+import { useTheme } from '../contexts/ThemeContext';
 
-const HamburgerMenu = ({ openSettings, isDarkMode, navigation }) => {
+const HamburgerMenu = ({ openSettings, navigation }) => {
   const { chats, currentChatId, setCurrentChatId } = useChat();
+  const { isDarkMode } = useTheme();
+  
   const backgroundColor = isDarkMode ? '#1c1c1e' : 'white';
   const textColor = isDarkMode ? '#ffffff' : '#000000';
   const borderColor = isDarkMode ? '#2c2c2e' : '#ccc';

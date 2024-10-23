@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { useTheme } from '../contexts/ThemeContext';
 
-const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdrop, isDarkMode, toggleDarkMode }) => {
+const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdrop }) => {
+  const { isDarkMode, toggleTheme } = useTheme();
   const backgroundColor = isDarkMode ? '#1c1c1e' : 'white'; // Dark gray for dark mode
   const textColor = isDarkMode ? '#ffffff' : '#000000';
   const borderColor = isDarkMode ? '#2c2c2e' : '#cccccc';
@@ -27,10 +29,14 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           <Ionicons name="close-circle-outline" size={30} color={textColor} />
         </TouchableOpacity>
         <Text style={[styles.settingsTitle, { color: textColor }]}>Settings</Text>
-        <TouchableOpacity style={[styles.settingItem, { borderBottomColor: borderColor }]} onPress={toggleDarkMode}>
+        <TouchableOpacity style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <Text style={{ color: textColor }}>
             {isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           </Text>
+          <Switch
+            value={isDarkMode}
+            onValueChange={toggleTheme}
+          />
         </TouchableOpacity>
         <TouchableOpacity style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <Text style={{ color: textColor }}>

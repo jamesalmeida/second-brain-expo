@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useChat } from '../ChatContext';
+import { useChat } from '../contexts/ChatContext';
+import { useTheme } from '../contexts/ThemeContext';
 
-const BottomBar = forwardRef(({ isDarkMode }, ref) => {
+const BottomBar = forwardRef((props, ref) => {
+  const { isDarkMode } = useTheme();
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);

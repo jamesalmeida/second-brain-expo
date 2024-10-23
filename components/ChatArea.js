@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Image, Keyboard } from 'react-native';
-import { useChat } from '../ChatContext';
+import { useChat } from '../contexts/ChatContext';
 import logo from '../assets/images/brain-gray.png'; // Adjust the path as necessary
 
 const ChatArea = ({ bottomBarRef }) => {

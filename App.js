@@ -9,7 +9,8 @@ import Settings from './components/Settings';
 import ChatArea from './components/ChatArea';
 import HamburgerMenu from './components/HamburgerMenu';
 import BottomBar from './components/BottomBar';
-import { ChatProvider, useChat } from './ChatContext';
+import { ChatProvider, useChat } from './contexts/ChatContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { Platform } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native';
 
@@ -45,67 +46,67 @@ export default function App() {
     setIsDarkMode(!isDarkMode);
   };
 
+  const MainScreen = ({ navigation }) => {
+    const { isDarkMode } = useTheme();
+    const { currentModel, setCurrentModel } = useChat();
+
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: isDarkMode ? 'black' : 'white' }}>
+        <Header 
+          navigation={navigation} 
+          currentModel={currentModel}
+          setCurrentModel={setCurrentModel}
+        />
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        >
+          <ChatArea bottomBarRef={bottomBarRef} />
+          <BottomBar ref={bottomBarRef} />
+        </KeyboardAvoidingView>
+        <Settings
+          bottomSheetRef={bottomSheetRef}
+          snapPoints={snapPoints}
+          handleSheetChanges={handleSheetChanges}
+          renderBackdrop={renderBackdrop}
+        />
+      </SafeAreaView>
+    );
+  };
+
   return (
     <ChatProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <NavigationContainer>
-          <Drawer.Navigator
-            drawerContent={(props) => (
-              <HamburgerMenu 
-                {...props} 
-                openSettings={() => openSettings(props.navigation)} 
-                isDarkMode={isDarkMode}
-                navigation={props.navigation}
-              />
-            )}
-            screenOptions={{
-              drawerStyle: {
-                width: '85%',
-                backgroundColor: isDarkMode ? '#1c1c1e' : 'white',
-              },
-              overlayColor: 'rgba(0,0,0,0.5)',
-            }}
-          >
-            <Drawer.Screen 
-              name="Home" 
-              options={{ 
-                headerShown: false,
-                title: "Second Brain"
+      <ThemeProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <NavigationContainer>
+            <Drawer.Navigator
+              drawerContent={(props) => (
+                <HamburgerMenu 
+                  {...props} 
+                  openSettings={() => openSettings(props.navigation)} 
+                  navigation={props.navigation}
+                />
+              )}
+              screenOptions={{
+                drawerStyle: {
+                  width: '85%',
+                },
+                overlayColor: 'rgba(0,0,0,0.5)',
               }}
             >
-              {({ navigation }) => {
-                const { currentModel, setCurrentModel } = useChat();
-                return (
-                  <SafeAreaView style={{ flex: 1, backgroundColor: isDarkMode ? 'black' : 'white' }}>
-                    <Header 
-                      navigation={navigation} 
-                      currentModel={currentModel}
-                      setCurrentModel={setCurrentModel}
-                      isDarkMode={isDarkMode} 
-                    />
-                    <KeyboardAvoidingView 
-                      behavior={Platform.OS === "ios" ? "padding" : "height"}
-                      style={{ flex: 1 }}
-                      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-                    >
-                      <ChatArea bottomBarRef={bottomBarRef} />
-                      <BottomBar ref={bottomBarRef} isDarkMode={isDarkMode} />
-                    </KeyboardAvoidingView>
-                    <Settings
-                      bottomSheetRef={bottomSheetRef}
-                      snapPoints={snapPoints}
-                      handleSheetChanges={handleSheetChanges}
-                      renderBackdrop={renderBackdrop}
-                      isDarkMode={isDarkMode}
-                      toggleDarkMode={toggleDarkMode}
-                    />
-                  </SafeAreaView>
-                );
-              }}
-            </Drawer.Screen>
-          </Drawer.Navigator>
-        </NavigationContainer>
-      </GestureHandlerRootView>
+              <Drawer.Screen 
+                name="Home" 
+                component={MainScreen}
+                options={{ 
+                  headerShown: false,
+                  title: "Second Brain"
+                }}
+              />
+            </Drawer.Navigator>
+          </NavigationContainer>
+        </GestureHandlerRootView>
+      </ThemeProvider>
     </ChatProvider>
   );
 }
