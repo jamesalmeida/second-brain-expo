@@ -2,12 +2,14 @@
   "expo": {
     "name": "Second Brain - Organized Notes",
     "slug": "second-brain",
+    "version": "1.0.0",
     "icon": "./assets/images/icon.png",
     "web": {
       "favicon": "./assets/images/favicon.png",
       "name": "Second Brain"
     },
     "ios": {
+      "buildNumber": "1",
       "infoPlist": {
         "UIFileSharingEnabled": true,
         "LSSupportsOpeningDocumentsInPlace": true,
