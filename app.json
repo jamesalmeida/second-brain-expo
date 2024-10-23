@@ -13,7 +13,8 @@
       "infoPlist": {
         "UIFileSharingEnabled": true,
         "LSSupportsOpeningDocumentsInPlace": true,
-        "UISupportsDocumentBrowser": true
+        "UISupportsDocumentBrowser": true,
+        "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.jamesadev.secondbrain"
     },
