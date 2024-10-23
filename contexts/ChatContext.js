@@ -13,7 +13,8 @@ export const ChatProvider = ({ children }) => {
   const [availableModels, setAvailableModels] = useState([]);
   const [modelMap, setModelMap] = useState({});
   const [apiKey, setApiKey] = useState('');
-  const [useBuiltInKey, setUseBuiltInKey] = useState(true);
+  const [useBuiltInKey, setUseBuiltInKey] = useState(false); // Make initial state false
+  const [builtInKeyCode, setBuiltInKeyCode] = useState('4084'); // Temp code for testing without needing to subscribe
 
   const changeModel = (newModel) => {
     console.log('Model inside ChatContext changed to:', newModel); // Log the new model
@@ -270,7 +271,8 @@ export const ChatProvider = ({ children }) => {
       apiKey,
       setApiKey,
       useBuiltInKey,
-      setUseBuiltInKey
+      setUseBuiltInKey,
+      builtInKeyCode
     }}>
       {children}
     </ChatContext.Provider>
