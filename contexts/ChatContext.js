@@ -43,10 +43,15 @@ export const ChatProvider = ({ children }) => {
 
   const saveChat = async (chat) => {
     try {
-      const fileName = `${chat.id}.json`;
+      const fileName = `${chat.id}.md`;
       const filePath = chatDirectory + fileName;
-      console.log('Saving chat:', chat);
-      await FileSystem.writeAsStringAsync(filePath, JSON.stringify(chat), { encoding: FileSystem.EncodingType.UTF8 });
+      
+      let markdownContent = `# ${chat.title}\n\n`;
+      chat.messages.forEach(message => {
+        markdownContent += `## ${message.role}\n${message.content}\n\n`;
+      });
+      
+      await FileSystem.writeAsStringAsync(filePath, markdownContent, { encoding: FileSystem.EncodingType.UTF8 });
       console.log('Chat saved successfully');
     } catch (e) {
       console.error('Error saving chat', e);
@@ -57,9 +62,34 @@ export const ChatProvider = ({ children }) => {
     try {
       const files = await FileSystem.readDirectoryAsync(chatDirectory);
       const chats = await Promise.all(
-        files.map(async (file) => {
+        files.filter(file => file.endsWith('.md')).map(async (file) => {
           const content = await FileSystem.readAsStringAsync(chatDirectory + file, { encoding: FileSystem.EncodingType.UTF8 });
-          return JSON.parse(content);
+          const lines = content.split('\n');
+          const title = lines[0].replace('# ', '');
+          const messages = [];
+          let currentRole = '';
+          let currentContent = '';
+
+          for (let i = 2; i < lines.length; i++) {
+            if (lines[i].startsWith('## ')) {
+              if (currentRole) {
+                messages.push({ role: currentRole, content: currentContent.trim() });
+              }
+              currentRole = lines[i].replace('## ', '');
+              currentContent = '';
+            } else {
+              currentContent += lines[i] + '\n';
+            }
+          }
+          if (currentRole) {
+            messages.push({ role: currentRole, content: currentContent.trim() });
+          }
+
+          return {
+            id: file.replace('.md', ''),
+            title,
+            messages
+          };
         })
       );
       return chats.sort((a, b) => a.id - b.id);
@@ -184,12 +214,10 @@ export const ChatProvider = ({ children }) => {
     const updatedChats = chats.filter(chat => chat.id !== chatId);
     setChats(updatedChats);
     
-    // Delete the chat file
-    const fileName = `${chatId}.json`;
+    const fileName = `${chatId}.md`;
     const filePath = chatDirectory + fileName;
     await FileSystem.deleteAsync(filePath);
 
-    // If the deleted chat was the current chat, set a new current chat
     if (chatId === currentChatId) {
       setCurrentChatId(updatedChats.length > 0 ? updatedChats[0].id : null);
     }
