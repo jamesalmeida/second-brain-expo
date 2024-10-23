@@ -90,7 +90,7 @@ export default function App() {
               )}
               screenOptions={{
                 drawerStyle: {
-                  width: '85%',
+                  width: '89%',
                 },
                 overlayColor: 'rgba(0,0,0,0.5)',
               }}
