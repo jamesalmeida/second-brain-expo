@@ -180,18 +180,34 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const deleteChat = async (chatId) => {
+    const updatedChats = chats.filter(chat => chat.id !== chatId);
+    setChats(updatedChats);
+    
+    // Delete the chat file
+    const fileName = `${chatId}.json`;
+    const filePath = chatDirectory + fileName;
+    await FileSystem.deleteAsync(filePath);
+
+    // If the deleted chat was the current chat, set a new current chat
+    if (chatId === currentChatId) {
+      setCurrentChatId(updatedChats.length > 0 ? updatedChats[0].id : null);
+    }
+  };
+
   return (
     <ChatContext.Provider value={{ 
       chats, 
       currentChatId, 
-      currentModel, // Provide currentModel from context
-      setCurrentModel: changeModel, // Provide the changeModel function
+      currentModel,
+      setCurrentModel: changeModel,
       createNewChat, 
       addMessage, 
       sendMessageToOpenAI, 
       setCurrentChatId,
       availableModels,
-      modelMap
+      modelMap,
+      deleteChat
     }}>
       {children}
     </ChatContext.Provider>
