@@ -152,8 +152,7 @@ export const ChatProvider = ({ children }) => {
   
     try {
       const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
-      console.log('modelMap in ChatContext:', modelMap);
-      console.log('Using model inside ChatContext:', apiModel);
+
   
       const currentChat = updatedChatsWithUserMessage.find(chat => chat.id === currentChatId);
       const messages = [
@@ -223,20 +222,30 @@ export const ChatProvider = ({ children }) => {
           'Authorization': `Bearer ${OPENAI_API_KEY}`,
         },
       });
+
+      // Add default GPT-3.5 model
+      const defaultModel = {
+        id: 'gpt-3.5-turbo',
+        name: 'GPT-3.5'
+      };
+
       const models = response.data.data
         .filter(model => model.id.startsWith('gpt-'))
         .map(model => ({
           id: model.id,
           name: model.id.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
         }));
-      setAvailableModels(models);
+
+      // Ensure GPT-3.5 is in the list and at the top
+      const uniqueModels = [defaultModel, ...models.filter(model => model.id !== 'gpt-3.5-turbo')];
+      setAvailableModels(uniqueModels);
       
       // Create modelMap dynamically
-      const newModelMap = Object.fromEntries(models.map(model => [model.name, model.id]));
+      const newModelMap = Object.fromEntries(uniqueModels.map(model => [model.name, model.id]));
       setModelMap(newModelMap);
 
-      console.log('Available models:', models);
-      console.log('Model map:', newModelMap); // Check the model map here
+      console.log('Available models:', uniqueModels);
+      console.log('Model map:', newModelMap);
     } catch (error) {
       console.error('Error fetching available models:', error);
     }
