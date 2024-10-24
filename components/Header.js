@@ -30,7 +30,6 @@ const Header = ({ navigation }) => {
   };
 
   const selectModel = (model) => {
-    console.log('Selected model:', model);
     setCurrentModel(model);
     toggleModal();
   };

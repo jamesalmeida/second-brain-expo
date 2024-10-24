@@ -17,7 +17,7 @@ export const ChatProvider = ({ children }) => {
   const [builtInKeyCode, setBuiltInKeyCode] = useState('4084'); // Temp code for testing without needing to subscribe
 
   const changeModel = (newModel) => {
-    console.log('Model inside ChatContext changed to:', newModel); // Log the new model
+    console.log('Model changed to:', newModel); // Log the new model
     setCurrentModel(newModel);
   };
 
@@ -180,11 +180,12 @@ export const ChatProvider = ({ children }) => {
         }
       );
 
-      console.log('OpenAI Response:', response.data);
       console.log('Used model:', apiModel);
+      console.log('OpenAI Response:', response.data);
 
       const aiMessage = response.data.choices[0].message.content;
-
+      console.log('AI Response:', aiMessage);
+      
       // Add AI response to the chat
       const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
         chat.id === currentChatId 
@@ -244,8 +245,8 @@ export const ChatProvider = ({ children }) => {
       const newModelMap = Object.fromEntries(uniqueModels.map(model => [model.name, model.id]));
       setModelMap(newModelMap);
 
-      console.log('Available models:', uniqueModels);
-      console.log('Model map:', newModelMap);
+      // console.log('Available models:', uniqueModels);
+      // console.log('Model map:', newModelMap);
     } catch (error) {
       console.error('Error fetching available models:', error);
     }
