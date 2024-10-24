@@ -144,6 +144,7 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           <Ionicons name="close-circle-outline" size={30} color={textColor} />
         </TouchableOpacity>
         <Text style={[styles.settingsTitle, { color: textColor }]}>Settings</Text>
+
         <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <Text style={{ color: textColor }}>
             {isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
@@ -153,28 +154,7 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             onValueChange={toggleTheme}
           />
         </View>
-        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <Text style={{ color: textColor }}>AI Voice On/Off</Text>
-          <Switch
-            value={false} // Placeholder value
-            onValueChange={() => {}} // Placeholder function
-          />
-        </View>
-        <TouchableOpacity style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <Text style={{ color: textColor }}>Choose AI Voice</Text>
-        </TouchableOpacity>
-        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <Text style={{ color: textColor }}>AI Voice Speed</Text>
-          <Slider
-            style={{width: 200, height: 40}}
-            minimumValue={0}
-            maximumValue={1}
-            value={0.5} // Placeholder value
-            onValueChange={() => {}} // Placeholder function
-            minimumTrackTintColor="#FFFFFF"
-            maximumTrackTintColor="#000000"
-          />
-        </View>
+
         <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <Text style={{ color: textColor }}>Use Built-in API Key:</Text>
           <Switch
@@ -182,6 +162,7 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             onValueChange={toggleBuiltInKey}
           />
         </View>
+
         <View style={[styles.settingItem, { borderBottomColor: borderColor, opacity: useBuiltInKey ? 0.5 : 1, flexDirection: 'column', alignItems: 'flex-start' }]}>
           <View style={styles.labelContainer}>
             <Text style={{ color: textColor }}>Use Your Own OpenAI API Key:</Text>
@@ -224,6 +205,32 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             </Text>
           </TouchableOpacity>
         </View>
+
+        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+          <Text style={{ color: textColor }}>AI Voice On/Off</Text>
+          <Switch
+            value={false} // Placeholder value
+            onValueChange={() => {}} // Placeholder function
+          />
+        </View>
+
+        <TouchableOpacity style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+          <Text style={{ color: textColor }}>Choose AI Voice</Text>
+        </TouchableOpacity>
+
+        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+          <Text style={{ color: textColor }}>AI Voice Speed</Text>
+          <Slider
+            style={{width: 200, height: 40}}
+            minimumValue={0}
+            maximumValue={1}
+            value={0.5} // Placeholder value
+            onValueChange={() => {}} // Placeholder function
+            minimumTrackTintColor="#FFFFFF"
+            maximumTrackTintColor="#000000"
+          />
+        </View>
+
         {/* TODO: Add more settings options */}
       </BottomSheetView>
       <Modal
