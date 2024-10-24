@@ -75,24 +75,30 @@ const styles = StyleSheet.create({
     paddingBottom: 60, // Add some bottom padding to prevent overlap with the input
   },
   messageBubble: {
-    maxWidth: '80%',
-    padding: 10,
-    borderRadius: 10,
+    maxWidth: '75%',
+    padding: 12,
+    borderRadius: 18,
     marginBottom: 10,
   },
   userMessage: {
     alignSelf: 'flex-end',
     backgroundColor: '#007AFF',
+    borderBottomRightRadius: 0,
   },
   aiMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#E9E9EB',
+    borderBottomLeftRadius: 0,
   },
   messageText: {
-    color: '#000',
+    fontSize: 16,
+    lineHeight: 20,
   },
   userMessageText: {
     color: '#fff',
+  },
+  aiMessageText: {
+    color: '#000',
   },
   emptyChatContainer: {
     flex: 1,
@@ -100,8 +106,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 100, // Adjust size as needed
-    height: 100, // Adjust size as needed
+    width: 100,
+    height: 100,
     resizeMode: 'contain',
   },
 });
