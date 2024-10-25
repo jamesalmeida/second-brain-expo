@@ -1,12 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Image, Keyboard } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Image, Keyboard, TouchableOpacity, Animated } from 'react-native';
 import { useChat } from '../contexts/ChatContext';
-import logo from '../assets/images/brain-gray.png'; // Adjust the path as necessary
+import brainLogo from '../assets/images/brain-gray.png'; // Adjust the path as necessary
 
-const ChatArea = ({ bottomBarRef }) => {
+const ChatArea = ({ bottomBarRef, openSettings }) => {
   const { chats, currentChatId } = useChat();
   const scrollViewRef = useRef();
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const logoScale = useRef(new Animated.Value(1)).current;
 
   const currentChat = chats.find(chat => chat.id === currentChatId);
   const messages = currentChat ? currentChat.messages : [];
@@ -34,6 +35,23 @@ const ChatArea = ({ bottomBarRef }) => {
     }
   };
 
+  const handleLogoPress = () => {
+    Animated.sequence([
+      Animated.timing(logoScale, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      openSettings();
+    });
+  };
+
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -49,7 +67,15 @@ const ChatArea = ({ bottomBarRef }) => {
       >
         {messages.length === 0 ? (
           <View style={styles.emptyChatContainer}>
-            <Image source={logo} style={styles.logo} />
+            <TouchableOpacity onPress={handleLogoPress} activeOpacity={0.8}>
+              <Animated.Image 
+                source={brainLogo} 
+                style={[
+                  styles.logo,
+                  { transform: [{ scale: logoScale }] }
+                ]} 
+              />
+            </TouchableOpacity>
           </View>
         ) : (
           messages.map((message, index) => (

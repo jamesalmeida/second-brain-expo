@@ -1,6 +1,6 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { SafeAreaView, View } from 'react-native';
+import { SafeAreaView, View, TouchableOpacity, Animated } from 'react-native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { NavigationContainer } from '@react-navigation/native';
 import { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
@@ -50,6 +50,10 @@ export default function App() {
     const { isDarkMode } = useTheme();
     const { currentModel, setCurrentModel } = useChat();
 
+    const openSettings = () => {
+      bottomSheetRef.current?.expand();
+    };
+
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: isDarkMode ? 'black' : 'white' }}>
         <Header 
@@ -62,7 +66,7 @@ export default function App() {
           style={{ flex: 1 }}
           keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
         >
-          <ChatArea bottomBarRef={bottomBarRef} />
+          <ChatArea bottomBarRef={bottomBarRef} openSettings={openSettings} />
           <BottomBar ref={bottomBarRef} />
         </KeyboardAvoidingView>
         <Settings
