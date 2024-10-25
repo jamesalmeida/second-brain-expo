@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, Dimensions, StyleSheet, Animated } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -8,25 +8,9 @@ const Header = ({ navigation }) => {
   const { createNewChat, availableModels, currentModel, setCurrentModel } = useChat();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const { isDarkMode } = useTheme();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const toggleModal = () => {
-    if (isModalVisible) {
-      // Fade out
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => setIsModalVisible(false));
-    } else {
-      setIsModalVisible(true);
-      // Fade in
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    }
+    setIsModalVisible(!isModalVisible);
   };
 
   const selectModel = (model) => {
@@ -48,18 +32,15 @@ const Header = ({ navigation }) => {
       </TouchableOpacity>
 
       <Modal
-        animationType="none"
+        animationType="fade"
         transparent={true}
         visible={isModalVisible}
         onRequestClose={toggleModal}
       >
-        <Animated.View 
-          style={[
-            styles.modalOverlay,
-            {
-              opacity: fadeAnim,
-            }
-          ]}
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPressOut={toggleModal}
         >
           <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#2c2c2e' : 'white' }]}>
             <View style={styles.modalHeader}>
@@ -94,7 +75,7 @@ const Header = ({ navigation }) => {
               ))}
             </ScrollView>
           </View>
-        </Animated.View>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -106,8 +87,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 10,
-    // borderBottomWidth: 1,
-    // borderBottomColor: '#ccc',
   },
   modelSelector: {
     flexDirection: 'row',
@@ -120,17 +99,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    width: '90%',
+    width: '80%',
     maxHeight: '70%',
     borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
