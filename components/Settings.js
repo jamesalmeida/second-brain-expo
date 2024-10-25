@@ -143,7 +143,7 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
         >
           <Ionicons name="close-circle-outline" size={30} color={textColor} />
         </TouchableOpacity>
-        <Text style={[styles.settingsTitle, { color: textColor }]}>Settings</Text>
+        <Text style={[styles.settingsTitle, { color: textColor }]}>🧠 Settings</Text>
 
         <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <Text style={{ color: textColor }}>
