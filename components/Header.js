@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -32,7 +32,7 @@ const Header = ({ navigation }) => {
       </TouchableOpacity>
 
       <Modal
-        animationType="fade"
+        animationType="fade" // or "slide" or "none"
         transparent={true}
         visible={isModalVisible}
         onRequestClose={toggleModal}
@@ -55,25 +55,35 @@ const Header = ({ navigation }) => {
                 />
               </TouchableOpacity>
             </View>
-            <ScrollView>
-              {availableModels.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  onPress={() => selectModel(item.name)}
-                  style={[
-                    styles.modelItem,
-                    currentModel === item.name && styles.selectedModelItem
-                  ]}
-                >
-                  <Text style={{ 
-                    color: isDarkMode ? 'white' : 'black',
-                    fontWeight: currentModel === item.name ? 'bold' : 'normal'
-                  }}>
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            {availableModels.length > 0 ? (
+              <FlatList
+                data={availableModels}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => selectModel(item.name)}
+                    style={[
+                      styles.modelItem,
+                      currentModel === item.name && styles.selectedModelItem
+                    ]}
+                  >
+                    <Text style={{ 
+                      color: isDarkMode ? 'white' : 'black',
+                      fontWeight: currentModel === item.name ? 'bold' : 'normal'
+                    }}>
+                      {item.name}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                scrollEnabled={true}
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={styles.flatListContent}
+              />
+            ) : (
+              <Text style={[styles.noModelsText, { color: isDarkMode ? 'white' : 'black' }]}>
+                No models available
+              </Text>
+            )}
           </View>
         </TouchableOpacity>
       </Modal>
@@ -100,7 +110,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '80%',
-    maxHeight: '70%',
+    maxHeight: '80%',
     borderRadius: 10,
     overflow: 'hidden',
   },
@@ -126,6 +136,13 @@ const styles = StyleSheet.create({
   },
   selectedModelItem: {
     backgroundColor: 'rgba(0, 122, 255, 0.1)',
+  },
+  flatListContent: {
+    flexGrow: 1,
+  },
+  noModelsText: {
+    padding: 15,
+    textAlign: 'center',
   },
 });
 
