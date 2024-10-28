@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Image, Keyboard, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform, Image, Keyboard, TouchableOpacity, Animated } from 'react-native';
 import { useChat } from '../contexts/ChatContext';
 import brainLogo from '../assets/images/brain-gray.png'; // Adjust the path as necessary
 
@@ -53,11 +53,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-      keyboardVerticalOffset={100}
-    >
+    <View style={styles.container}>
       <ScrollView
         ref={scrollViewRef}
         contentContainerStyle={styles.scrollViewContent}
@@ -87,7 +83,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
           ))
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 

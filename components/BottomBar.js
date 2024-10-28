@@ -55,8 +55,12 @@ const BottomBar = forwardRef((props, ref) => {
           onSubmitEditing={handleSend}
           onFocus={() => setIsInputFocused(true)}
           onBlur={() => setIsInputFocused(false)}
-          returnKeyType="send"
           blurOnSubmit={false}
+          secureTextEntry={false}
+          multiline={true}
+          numberOfLines={10}
+          textAlignVertical="center"
+          returnKeyType="default"
         />
         <Animated.View style={{ opacity: fadeAnim }}>
           <TouchableOpacity onPress={handleSend} style={styles.iconButton}>
@@ -88,12 +92,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: 25,
+    marginHorizontal: 10,
     paddingHorizontal: 10,
+    minHeight: 50,
+    maxHeight: 120, // Limits maximum height
   },
   input: {
     flex: 1,
-    height: 40,
-    paddingHorizontal: 10,
+    fontSize: 16,
+    paddingVertical: 8,
+    maxHeight: 120, // Matches container maxHeight
   },
   iconButton: {
     padding: 5,
