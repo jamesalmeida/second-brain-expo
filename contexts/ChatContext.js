@@ -218,9 +218,19 @@ export const ChatProvider = ({ children }) => {
 
   const fetchAvailableModels = async () => {
     try {
+      const activeApiKey = useBuiltInKey ? OPENAI_API_KEY : apiKey;
+
+      if (!activeApiKey) {
+        setAvailableModels([{
+          id: 'gpt-3.5-turbo',
+          name: 'GPT-3.5'
+        }]);
+        return;
+      }
+
       const response = await axios.get('https://api.openai.com/v1/models', {
         headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${activeApiKey}`,
         },
       });
 
@@ -244,11 +254,13 @@ export const ChatProvider = ({ children }) => {
       // Create modelMap dynamically
       const newModelMap = Object.fromEntries(uniqueModels.map(model => [model.name, model.id]));
       setModelMap(newModelMap);
-
-      // console.log('Available models:', uniqueModels);
-      // console.log('Model map:', newModelMap);
     } catch (error) {
       console.error('Error fetching available models:', error);
+      // Set default model if fetch fails
+      setAvailableModels([{
+        id: 'gpt-3.5-turbo',
+        name: 'GPT-3.5'
+      }]);
     }
   };
 
@@ -264,6 +276,10 @@ export const ChatProvider = ({ children }) => {
       setCurrentChatId(updatedChats.length > 0 ? updatedChats[0].id : null);
     }
   };
+
+  useEffect(() => {
+    fetchAvailableModels();
+  }, [apiKey, useBuiltInKey]);
 
   return (
     <ChatContext.Provider value={{ 
