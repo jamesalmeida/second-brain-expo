@@ -56,11 +56,18 @@ const BottomBar = forwardRef((props, ref) => {
           onFocus={() => setIsInputFocused(true)}
           onBlur={() => setIsInputFocused(false)}
           blurOnSubmit={false}
-          secureTextEntry={false}
           multiline={true}
-          numberOfLines={10}
           textAlignVertical="center"
-          returnKeyType="default"
+          keyboardType="default"
+          autoComplete="off"
+          autoCorrect={false}
+          autoCapitalize="none"
+          textContentType="none"
+          importantForAutofill="no"
+          passwordRules=""
+          secureTextEntry={false}
+          caretHidden={false}
+          spellCheck={false}
         />
         <Animated.View style={{ opacity: fadeAnim }}>
           <TouchableOpacity onPress={handleSend} style={styles.iconButton}>
