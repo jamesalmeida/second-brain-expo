@@ -7,14 +7,23 @@ import { useChat } from '../contexts/ChatContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Slider from '@react-native-community/slider';
+import { OpenAI } from 'openai';
 
 const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdrop }) => {
   const { isDarkMode, toggleTheme } = useTheme();
-  const { apiKey, setApiKey, useBuiltInKey, setUseBuiltInKey, builtInKeyCode } = useChat();
+  const { 
+    apiKey, setApiKey, 
+    grokApiKey, setGrokApiKey,
+    useBuiltInKey, setUseBuiltInKey,
+    useGrokKey, setUseGrokKey,
+    builtInKeyCode 
+  } = useChat();
   const [isCodeModalVisible, setIsCodeModalVisible] = useState(false);
   const [enteredCode, setEnteredCode] = useState('');
   const [isApiKeyValid, setIsApiKeyValid] = useState(false);
   const [isApiKeyFrozen, setIsApiKeyFrozen] = useState(false);
+  const [isGrokApiKeyValid, setIsGrokApiKeyValid] = useState(false);
+  const [isGrokApiKeyFrozen, setIsGrokApiKeyFrozen] = useState(false);
 
   useEffect(() => {
     loadApiKey();
@@ -33,40 +42,29 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
 
   const saveApiKey = async () => {
     try {
-      // Verify the API key
-      const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          model: 'gpt-3.5-turbo',
-          messages: [{ role: 'user', content: 'Hello' }],
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          }
-        }
-      );
+      const openai = new OpenAI({
+        apiKey: apiKey,
+        baseURL: "https://api.openai.com/v1",
+      });
 
-      if (response.status === 200) {
-        // API key is valid
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: 'Hello' }],
+      });
+
+      if (completion) {
         await AsyncStorage.setItem('openai_api_key', apiKey);
         setIsApiKeyValid(true);
         setIsApiKeyFrozen(true);
         setUseBuiltInKey(false);
         await AsyncStorage.setItem('use_built_in_key', 'false');
         console.log('API key saved successfully');
-      } else {
-        // API key is invalid
-        setIsApiKeyValid(false);
-        setIsApiKeyFrozen(false);
-        Alert.alert('Invalid API Key', 'The provided API key is not valid. Please check and try again.');
       }
     } catch (error) {
       console.error('Error saving API key:', error);
       setIsApiKeyValid(false);
       setIsApiKeyFrozen(false);
-      Alert.alert('Error', 'Failed to verify API key. Please check your internet connection and try again.');
+      Alert.alert('Error', 'Failed to verify API key. Please check your API key and try again.');
     }
   };
 
@@ -95,6 +93,34 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
       await AsyncStorage.setItem('use_built_in_key', JSON.stringify(state));
     } catch (error) {
       console.error('Error saving built-in key state:', error);
+    }
+  };
+
+  const saveGrokApiKey = async () => {
+    try {
+      const openai = new OpenAI({
+        apiKey: grokApiKey,
+        baseURL: "https://api.x.ai/v1",
+      });
+
+      const response = await openai.chat.completions.create({
+        model: "grok-beta",
+        messages: [{ role: "user", content: "Hello" }],
+      });
+
+      if (response) {
+        await AsyncStorage.setItem('grok_api_key', grokApiKey);
+        setIsGrokApiKeyValid(true);
+        setIsGrokApiKeyFrozen(true);
+        setUseGrokKey(true);
+        await AsyncStorage.setItem('use_grok_key', 'true');
+        console.log('Grok API key saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving Grok API key:', error);
+      setIsGrokApiKeyValid(false);
+      setIsGrokApiKeyFrozen(false);
+      Alert.alert('Invalid API Key', 'The provided Grok API key is not valid. Please check and try again.');
     }
   };
 
@@ -202,6 +228,53 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           >
             <Text style={[styles.saveButtonText, useBuiltInKey && { opacity: 0.5 }]}>
               {isApiKeyValid ? 'Remove' : 'Save'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.settingItem, { borderBottomColor: borderColor, opacity: useBuiltInKey ? 0.5 : 1, flexDirection: 'column', alignItems: 'flex-start' }]}>
+          <View style={styles.labelContainer}>
+            <Text style={{ color: textColor }}>Grok API Key:</Text>
+          </View>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={[
+                styles.input, 
+                { color: textColor, borderColor },
+                isGrokApiKeyFrozen && styles.frozenInput
+              ]}
+              value={grokApiKey}
+              onChangeText={setGrokApiKey}
+              placeholder="Enter your Grok API key"
+              placeholderTextColor={isDarkMode ? '#999' : '#666'}
+              secureTextEntry
+              editable={!isGrokApiKeyFrozen}
+            />
+            {grokApiKey.length > 0 && (
+              <TouchableOpacity 
+                style={styles.iconButton} 
+                onPress={isGrokApiKeyFrozen ? null : () => setGrokApiKey('')}
+                disabled={isGrokApiKeyFrozen}
+              >
+                <Ionicons 
+                  name={isGrokApiKeyFrozen ? "checkmark-circle" : "close-circle"} 
+                  size={24} 
+                  color={isGrokApiKeyFrozen ? "green" : textColor} 
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity 
+            style={[styles.saveButton, isGrokApiKeyValid ? styles.removeButton : null]} 
+            onPress={isGrokApiKeyValid ? () => {
+              setGrokApiKey('');
+              setIsGrokApiKeyValid(false);
+              setIsGrokApiKeyFrozen(false);
+              AsyncStorage.removeItem('grok_api_key');
+            } : saveGrokApiKey}
+          >
+            <Text style={styles.saveButtonText}>
+              {isGrokApiKeyValid ? 'Remove' : 'Save'}
             </Text>
           </TouchableOpacity>
         </View>

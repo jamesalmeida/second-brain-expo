@@ -3,6 +3,7 @@ import axios from 'axios';
 import { OPENAI_API_KEY } from '@env';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { OpenAI } from 'openai';
 
 const ChatContext = createContext();
 
@@ -15,6 +16,8 @@ export const ChatProvider = ({ children }) => {
   const [apiKey, setApiKey] = useState('');
   const [useBuiltInKey, setUseBuiltInKey] = useState(false); // Make initial state false
   const [builtInKeyCode, setBuiltInKeyCode] = useState('4084'); // Temp code for testing without needing to subscribe
+  const [grokApiKey, setGrokApiKey] = useState('');
+  const [useGrokKey, setUseGrokKey] = useState(false);
 
   const changeModel = (newModel) => {
     console.log('Model changed to:', newModel); // Log the new model
@@ -42,13 +45,14 @@ export const ChatProvider = ({ children }) => {
   const loadApiKeySettings = async () => {
     try {
       const storedApiKey = await AsyncStorage.getItem('openai_api_key');
+      const storedGrokApiKey = await AsyncStorage.getItem('grok_api_key');
       const storedUseBuiltInKey = await AsyncStorage.getItem('use_built_in_key');
-      if (storedApiKey !== null) {
-        setApiKey(storedApiKey);
-      }
-      if (storedUseBuiltInKey !== null) {
-        setUseBuiltInKey(JSON.parse(storedUseBuiltInKey));
-      }
+      const storedUseGrokKey = await AsyncStorage.getItem('use_grok_key');
+      
+      if (storedApiKey !== null) setApiKey(storedApiKey);
+      if (storedGrokApiKey !== null) setGrokApiKey(storedGrokApiKey);
+      if (storedUseBuiltInKey !== null) setUseBuiltInKey(JSON.parse(storedUseBuiltInKey));
+      if (storedUseGrokKey !== null) setUseGrokKey(JSON.parse(storedUseGrokKey));
     } catch (error) {
       console.error('Error loading API key settings:', error);
     }
@@ -151,41 +155,39 @@ export const ChatProvider = ({ children }) => {
     setChats(updatedChatsWithUserMessage);
   
     try {
-      const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
-
-  
       const currentChat = updatedChatsWithUserMessage.find(chat => chat.id === currentChatId);
-      const messages = [
-        { role: 'system', content: 'You are a helpful assistant but you are also a bit sarcastic. Avoid pleasantries and be direct unless the situation calls for it.' },
-        ...currentChat.messages,
-      ];
-  
-      const activeApiKey = useBuiltInKey ? OPENAI_API_KEY : apiKey;
-  
-      if (!activeApiKey) {
-        throw new Error('No API key available. Please set an API key in the settings or enable the built-in key.');
-      }
-  
-      const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          model: apiModel,
-          messages: messages,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${activeApiKey}`,
-          },
-        }
-      );
-
-      console.log('Used model:', apiModel);
-      console.log('OpenAI Response:', response.data);
-
-      const aiMessage = response.data.choices[0].message.content;
-      console.log('AI Response:', aiMessage);
+      const messages = currentChat ? currentChat.messages : [];
       
+      const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
+      const isGrok = currentModel.toLowerCase().includes('grok');
+      
+      const activeApiKey = useBuiltInKey ? OPENAI_API_KEY : (isGrok ? grokApiKey : apiKey);
+      
+      if (!activeApiKey) {
+        throw new Error('No API key available. Please set an API key in the settings.');
+      }
+
+      const openai = new OpenAI({
+        apiKey: activeApiKey,
+        baseURL: isGrok ? "https://api.x.ai/v1" : "https://api.openai.com/v1",
+      });
+
+      console.log('Sending request with model:', isGrok ? "grok-beta" : apiModel);
+      
+      const completion = await openai.chat.completions.create({
+        model: isGrok ? "grok-beta" : apiModel,
+        messages: messages,
+      });
+
+      console.log('API Response:', completion);
+
+      if (!completion || !completion.choices || !completion.choices[0]) {
+        throw new Error('Invalid response from API');
+      }
+
+      const aiMessage = completion.choices[0].message.content;
+      console.log('AI Message:', aiMessage);
+
       // Add AI response to the chat
       const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
         chat.id === currentChatId 
@@ -199,12 +201,15 @@ export const ChatProvider = ({ children }) => {
       await saveChat(updatedChat);
     } catch (error) {
       console.error('Error sending message to OpenAI:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      
       let errorMessage = 'Sorry, I encountered an error. Please try again.';
-      if (error.response && error.response.status === 401) {
+      if (error.response?.status === 401) {
         errorMessage = 'Invalid API key. Please check your API key in the settings or enable the built-in key.';
       } else if (error.message.includes('No API key available')) {
         errorMessage = error.message;
       }
+
       // Add error message to the chat
       const updatedChatsWithError = updatedChatsWithUserMessage.map(chat => 
         chat.id === currentChatId 
@@ -218,13 +223,24 @@ export const ChatProvider = ({ children }) => {
 
   const fetchAvailableModels = async () => {
     try {
+      // Add default models including Grok
+      const defaultModels = [
+        {
+          id: 'gpt-3.5-turbo',
+          name: 'GPT-3.5'
+        },
+        {
+          id: 'grok-beta',
+          name: 'Grok'
+        }
+      ];
+
       const activeApiKey = useBuiltInKey ? OPENAI_API_KEY : apiKey;
 
       if (!activeApiKey) {
-        setAvailableModels([{
-          id: 'gpt-3.5-turbo',
-          name: 'GPT-3.5'
-        }]);
+        setAvailableModels(defaultModels);
+        const newModelMap = Object.fromEntries(defaultModels.map(model => [model.name, model.id]));
+        setModelMap(newModelMap);
         return;
       }
 
@@ -234,12 +250,6 @@ export const ChatProvider = ({ children }) => {
         },
       });
 
-      // Add default GPT-3.5 model
-      const defaultModel = {
-        id: 'gpt-3.5-turbo',
-        name: 'GPT-3.5'
-      };
-
       const models = response.data.data
         .filter(model => model.id.startsWith('gpt-'))
         .map(model => ({
@@ -247,8 +257,11 @@ export const ChatProvider = ({ children }) => {
           name: model.id.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
         }));
 
-      // Ensure GPT-3.5 is in the list and at the top
-      const uniqueModels = [defaultModel, ...models.filter(model => model.id !== 'gpt-3.5-turbo')];
+      // Combine default models with fetched models
+      const uniqueModels = [...defaultModels, ...models.filter(model => 
+        !defaultModels.some(dm => dm.id === model.id)
+      )];
+      
       setAvailableModels(uniqueModels);
       
       // Create modelMap dynamically
@@ -256,11 +269,20 @@ export const ChatProvider = ({ children }) => {
       setModelMap(newModelMap);
     } catch (error) {
       console.error('Error fetching available models:', error);
-      // Set default model if fetch fails
-      setAvailableModels([{
-        id: 'gpt-3.5-turbo',
-        name: 'GPT-3.5'
-      }]);
+      // Set default models if fetch fails
+      const defaultModels = [
+        {
+          id: 'gpt-3.5-turbo',
+          name: 'GPT-3.5'
+        },
+        {
+          id: 'grok-beta',
+          name: 'Grok'
+        }
+      ];
+      setAvailableModels(defaultModels);
+      const newModelMap = Object.fromEntries(defaultModels.map(model => [model.name, model.id]));
+      setModelMap(newModelMap);
     }
   };
 
@@ -298,7 +320,11 @@ export const ChatProvider = ({ children }) => {
       setApiKey,
       useBuiltInKey,
       setUseBuiltInKey,
-      builtInKeyCode
+      builtInKeyCode,
+      grokApiKey,
+      setGrokApiKey,
+      useGrokKey,
+      setUseGrokKey,
     }}>
       {children}
     </ChatContext.Provider>
