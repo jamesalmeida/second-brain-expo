@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, TouchableOpacity, SafeAreaView, StyleSheet, ScrollView, Alert, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useDrawerStatus } from '@react-navigation/drawer';
 
 const HamburgerMenu = ({ openSettings, navigation }) => {
   const { chats, currentChatId, setCurrentChatId, deleteChat } = useChat();
@@ -11,6 +12,14 @@ const HamburgerMenu = ({ openSettings, navigation }) => {
   const backgroundColor = isDarkMode ? '#1c1c1e' : 'white';
   const textColor = isDarkMode ? '#ffffff' : '#000000';
   const borderColor = isDarkMode ? '#2c2c2e' : '#ccc';
+
+  const isDrawerOpen = useDrawerStatus() === 'open';
+
+  useEffect(() => {
+    if (isDrawerOpen) {
+      Keyboard.dismiss();
+    }
+  }, [isDrawerOpen]);
 
   const handleChatSelect = (chatId) => {
     setCurrentChatId(chatId);
