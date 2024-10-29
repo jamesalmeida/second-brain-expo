@@ -19,9 +19,39 @@ export const ChatProvider = ({ children }) => {
   const [grokApiKey, setGrokApiKey] = useState('');
   const [useGrokKey, setUseGrokKey] = useState(false);
 
-  const changeModel = (newModel) => {
-    console.log('Model changed to:', newModel); // Log the new model
+  const changeModel = async (newModel) => {
+    console.log('Model changed to:', newModel);
     setCurrentModel(newModel);
+    
+    const modelChangeMessage = {
+      role: 'system',
+      content: `Switched to ${newModel} model`
+    };
+    
+    const updatedChats = chats.map(chat => {
+      if (chat.id === currentChatId) {
+        const messages = [...chat.messages];
+        const lastMessage = messages[messages.length - 1];
+        
+        // Check if the last message was a model change notification
+        if (lastMessage && 
+            lastMessage.role === 'system' && 
+            lastMessage.content.startsWith('Switched to')) {
+          // Replace the last model change message
+          messages[messages.length - 1] = modelChangeMessage;
+        } else {
+          // Add new model change message
+          messages.push(modelChangeMessage);
+        }
+        
+        return { ...chat, messages };
+      }
+      return chat;
+    });
+    
+    setChats(updatedChats);
+    const updatedChat = updatedChats.find(chat => chat.id === currentChatId);
+    await saveChat(updatedChat);
   };
 
   const chatDirectory = FileSystem.documentDirectory + 'chats/';

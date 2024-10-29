@@ -2,12 +2,14 @@ import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Platform, Image, Keyboard, TouchableOpacity, Animated } from 'react-native';
 import { useChat } from '../contexts/ChatContext';
 import brainLogo from '../assets/images/brain-gray.png'; // Adjust the path as necessary
+import { useTheme } from '../contexts/ThemeContext';
 
 const ChatArea = ({ bottomBarRef, openSettings }) => {
   const { chats, currentChatId } = useChat();
   const scrollViewRef = useRef();
   const [isAtBottom, setIsAtBottom] = useState(true);
   const logoScale = useRef(new Animated.Value(1)).current;
+  const { isDarkMode } = useTheme();
 
   const currentChat = chats.find(chat => chat.id === currentChatId);
   const messages = currentChat ? currentChat.messages : [];
@@ -75,8 +77,27 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
           </View>
         ) : (
           messages.map((message, index) => (
-            <View key={index} style={[styles.messageBubble, message.role === 'user' ? styles.userMessage : styles.aiMessage]}>
-              <Text style={[styles.messageText, message.role === 'user' ? styles.userMessageText : null]}>
+            <View 
+              key={index} 
+              style={[
+                styles.messageBubble, 
+                message.role === 'user' 
+                  ? styles.userMessage 
+                  : message.role === 'system'
+                  ? [styles.systemMessage, { backgroundColor: isDarkMode ? '#2C2C2E' : '#E5E5EA' }]
+                  : styles.aiMessage
+              ]}
+            >
+              <Text 
+                style={[
+                  styles.messageText, 
+                  message.role === 'user' 
+                    ? styles.userMessageText 
+                    : message.role === 'system'
+                    ? [styles.systemMessageText, { color: isDarkMode ? '#8E8E93' : '#666666' }]
+                    : styles.aiMessageText
+                ]}
+              >
                 {message.content}
               </Text>
             </View>
@@ -111,6 +132,17 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: '#E9E9EB',
     borderBottomLeftRadius: 0,
+  },
+  systemMessage: {
+    alignSelf: 'center',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginVertical: 8,
+  },
+  systemMessageText: {
+    fontSize: 14,
+    fontStyle: 'italic',
   },
   messageText: {
     fontSize: 16,
