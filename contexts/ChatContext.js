@@ -4,6 +4,11 @@ import { OPENAI_API_KEY } from '@env';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OpenAI } from 'openai';
+import { Platform } from 'react-native';
+
+// TOGGLE FOR WEB DEVELOPMENT ONLY - DISABLE IN PRODUCTION
+// API KEYS ARE NOT SUPPORTED ON WEB IN THIS VERSION
+const ALLOW_BROWSER = false;
 
 const ChatContext = createContext();
 
@@ -89,6 +94,9 @@ export const ChatProvider = ({ children }) => {
   };
 
   const ensureChatDirectoryExists = async () => {
+    if (Platform.OS === 'web') {
+      return; // No directory needed for web
+    }
     const dirInfo = await FileSystem.getInfoAsync(chatDirectory);
     if (!dirInfo.exists) {
       await FileSystem.makeDirectoryAsync(chatDirectory, { intermediates: true });
@@ -97,16 +105,29 @@ export const ChatProvider = ({ children }) => {
 
   const saveChat = async (chat) => {
     try {
-      const fileName = `${chat.id}.md`;
-      const filePath = chatDirectory + fileName;
-      
-      let markdownContent = `# ${chat.title}\n\n`;
-      chat.messages.forEach(message => {
-        markdownContent += `## ${message.role}\n${message.content}\n\n`;
-      });
-      
-      await FileSystem.writeAsStringAsync(filePath, markdownContent, { encoding: FileSystem.EncodingType.UTF8 });
-      console.log('Chat saved successfully');
+      if (Platform.OS === 'web') {
+        // Web storage implementation
+        const chats = await AsyncStorage.getItem('chats') || '[]';
+        const parsedChats = JSON.parse(chats);
+        const updatedChats = parsedChats.map(c => 
+          c.id === chat.id ? chat : c
+        );
+        if (!updatedChats.find(c => c.id === chat.id)) {
+          updatedChats.push(chat);
+        }
+        await AsyncStorage.setItem('chats', JSON.stringify(updatedChats));
+      } else {
+        // Native storage implementation
+        const fileName = `${chat.id}.md`;
+        const filePath = chatDirectory + fileName;
+        
+        let markdownContent = `# ${chat.title}\n\n`;
+        chat.messages.forEach(message => {
+          markdownContent += `## ${message.role}\n${message.content}\n\n`;
+        });
+        
+        await FileSystem.writeAsStringAsync(filePath, markdownContent);
+      }
     } catch (e) {
       console.error('Error saving chat', e);
     }
@@ -114,39 +135,46 @@ export const ChatProvider = ({ children }) => {
 
   const loadChats = async () => {
     try {
-      const files = await FileSystem.readDirectoryAsync(chatDirectory);
-      const chats = await Promise.all(
-        files.filter(file => file.endsWith('.md')).map(async (file) => {
-          const content = await FileSystem.readAsStringAsync(chatDirectory + file, { encoding: FileSystem.EncodingType.UTF8 });
-          const lines = content.split('\n');
-          const title = lines[0].replace('# ', '');
-          const messages = [];
-          let currentRole = '';
-          let currentContent = '';
+      if (Platform.OS === 'web') {
+        // Web loading implementation
+        const chats = await AsyncStorage.getItem('chats');
+        return chats ? JSON.parse(chats) : [];
+      } else {
+        // Native loading implementation (your existing code)
+        const files = await FileSystem.readDirectoryAsync(chatDirectory);
+        const chats = await Promise.all(
+          files.filter(file => file.endsWith('.md')).map(async (file) => {
+            const content = await FileSystem.readAsStringAsync(chatDirectory + file, { encoding: FileSystem.EncodingType.UTF8 });
+            const lines = content.split('\n');
+            const title = lines[0].replace('# ', '');
+            const messages = [];
+            let currentRole = '';
+            let currentContent = '';
 
-          for (let i = 2; i < lines.length; i++) {
-            if (lines[i].startsWith('## ')) {
-              if (currentRole) {
-                messages.push({ role: currentRole, content: currentContent.trim() });
+            for (let i = 2; i < lines.length; i++) {
+              if (lines[i].startsWith('## ')) {
+                if (currentRole) {
+                  messages.push({ role: currentRole, content: currentContent.trim() });
+                }
+                currentRole = lines[i].replace('## ', '');
+                currentContent = '';
+              } else {
+                currentContent += lines[i] + '\n';
               }
-              currentRole = lines[i].replace('## ', '');
-              currentContent = '';
-            } else {
-              currentContent += lines[i] + '\n';
             }
-          }
-          if (currentRole) {
-            messages.push({ role: currentRole, content: currentContent.trim() });
-          }
+            if (currentRole) {
+              messages.push({ role: currentRole, content: currentContent.trim() });
+            }
 
-          return {
-            id: file.replace('.md', ''),
-            title,
-            messages
-          };
-        })
-      );
-      return chats.sort((a, b) => a.id - b.id);
+            return {
+              id: file.replace('.md', ''),
+              title,
+              messages
+            };
+          })
+        );
+        return chats.sort((a, b) => a.id - b.id);
+      }
     } catch (e) {
       console.error('Error loading chats', e);
       return [];
@@ -188,47 +216,115 @@ export const ChatProvider = ({ children }) => {
       const currentChat = updatedChatsWithUserMessage.find(chat => chat.id === currentChatId);
       const messages = currentChat ? currentChat.messages : [];
       
-      const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
-      const isGrok = currentModel.toLowerCase().includes('grok');
+      // Check if the message is requesting image generation
+      const isImageRequest = userMessage.toLowerCase().includes('generate image') || 
+                            userMessage.toLowerCase().includes('create image') ||
+                            userMessage.toLowerCase().includes('draw');
+      console.log('Is image request:', isImageRequest);
+      console.log('User message:', userMessage);
       
-      const activeApiKey = useBuiltInKey ? OPENAI_API_KEY : (isGrok ? grokApiKey : apiKey);
-      
-      if (!activeApiKey) {
-        throw new Error('No API key available. Please set an API key in the settings.');
+      if (isImageRequest) {
+        console.log('Starting image generation...');
+        const openai = new OpenAI({
+          apiKey: useBuiltInKey ? OPENAI_API_KEY : apiKey,
+          baseURL: "https://api.openai.com/v1",
+          ...(ALLOW_BROWSER && { dangerouslyAllowBrowser: true })
+        });
+        
+        console.log('OpenAI client created');
+        
+        try {
+          console.log('Sending image generation request...');
+          const response = await openai.images.generate({
+            model: "dall-e-3",
+            prompt: userMessage,
+            n: 1,
+            size: "1024x1024",
+          });
+          console.log('Image generation response received:', response);
+
+          const imageUrl = response.data[0].url;
+          console.log('Image URL:', imageUrl);
+
+          const aiMessage = `<img src="${imageUrl}" alt="Generated Image" />`;
+          console.log('AI Message:', aiMessage);
+
+          // Add AI response with image to the chat
+          const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
+            chat.id === currentChatId 
+              ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
+              : chat
+          );
+          setChats(updatedChatsWithAIResponse);
+          
+          // Save the updated chat
+          const updatedChat = updatedChatsWithAIResponse.find(chat => chat.id === currentChatId);
+          await saveChat(updatedChat);
+          
+        } catch (error) {
+          console.error('Error generating image:', error);
+          console.error('Error details:', error.response?.data || error.message);
+          
+          let errorMessage = 'Sorry, I encountered an error. Please try again.';
+          if (error.response?.status === 401) {
+            errorMessage = 'Invalid API key. Please check your API key in the settings or enable the built-in key.';
+          } else if (error.message.includes('No API key available')) {
+            errorMessage = error.message;
+          }
+
+          // Add error message to the chat
+          const updatedChatsWithError = updatedChatsWithUserMessage.map(chat => 
+            chat.id === currentChatId 
+              ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: errorMessage }] }
+              : chat
+          );
+          setChats(updatedChatsWithError);
+          await saveChat(updatedChatsWithError.find(chat => chat.id === currentChatId));
+        }
+      } else {
+        const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
+        const isGrok = currentModel.toLowerCase().includes('grok');
+        
+        const activeApiKey = useBuiltInKey ? OPENAI_API_KEY : (isGrok ? grokApiKey : apiKey);
+        
+        if (!activeApiKey) {
+          throw new Error('No API key available. Please set an API key in the settings.');
+        }
+
+        const openai = new OpenAI({
+          apiKey: activeApiKey,
+          baseURL: isGrok ? "https://api.x.ai/v1" : "https://api.openai.com/v1",
+          ...(ALLOW_BROWSER && { dangerouslyAllowBrowser: true })
+        });
+
+        console.log('Sending request with model:', isGrok ? "grok-beta" : apiModel);
+        
+        const completion = await openai.chat.completions.create({
+          model: isGrok ? "grok-beta" : apiModel,
+          messages: messages,
+        });
+
+        console.log('API Response:', completion);
+
+        if (!completion || !completion.choices || !completion.choices[0]) {
+          throw new Error('Invalid response from API');
+        }
+
+        const aiMessage = completion.choices[0].message.content;
+        console.log('AI Message:', aiMessage);
+
+        // Add AI response to the chat
+        const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
+          chat.id === currentChatId 
+            ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
+            : chat
+        );
+        setChats(updatedChatsWithAIResponse);
+
+        // Save the updated chat
+        const updatedChat = updatedChatsWithAIResponse.find(chat => chat.id === currentChatId);
+        await saveChat(updatedChat);
       }
-
-      const openai = new OpenAI({
-        apiKey: activeApiKey,
-        baseURL: isGrok ? "https://api.x.ai/v1" : "https://api.openai.com/v1",
-      });
-
-      console.log('Sending request with model:', isGrok ? "grok-beta" : apiModel);
-      
-      const completion = await openai.chat.completions.create({
-        model: isGrok ? "grok-beta" : apiModel,
-        messages: messages,
-      });
-
-      console.log('API Response:', completion);
-
-      if (!completion || !completion.choices || !completion.choices[0]) {
-        throw new Error('Invalid response from API');
-      }
-
-      const aiMessage = completion.choices[0].message.content;
-      console.log('AI Message:', aiMessage);
-
-      // Add AI response to the chat
-      const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
-        chat.id === currentChatId 
-          ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
-          : chat
-      );
-      setChats(updatedChatsWithAIResponse);
-
-      // Save the updated chat
-      const updatedChat = updatedChatsWithAIResponse.find(chat => chat.id === currentChatId);
-      await saveChat(updatedChat);
     } catch (error) {
       console.error('Error sending message to OpenAI:', error);
       console.error('Error details:', error.response?.data || error.message);
@@ -317,13 +413,21 @@ export const ChatProvider = ({ children }) => {
   };
 
   const deleteChat = async (chatId) => {
+    if (Platform.OS === 'web') {
+      // Web deletion implementation
+      const chats = await AsyncStorage.getItem('chats') || '[]';
+      const parsedChats = JSON.parse(chats);
+      const updatedChats = parsedChats.filter(chat => chat.id !== chatId);
+      await AsyncStorage.setItem('chats', JSON.stringify(updatedChats));
+    } else {
+      // Native deletion implementation
+      const fileName = `${chatId}.md`;
+      const filePath = chatDirectory + fileName;
+      await FileSystem.deleteAsync(filePath);
+    }
     const updatedChats = chats.filter(chat => chat.id !== chatId);
     setChats(updatedChats);
     
-    const fileName = `${chatId}.md`;
-    const filePath = chatDirectory + fileName;
-    await FileSystem.deleteAsync(filePath);
-
     if (chatId === currentChatId) {
       setCurrentChatId(updatedChats.length > 0 ? updatedChats[0].id : null);
     }
