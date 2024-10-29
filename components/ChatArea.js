@@ -84,7 +84,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
                 message.role === 'user' 
                   ? styles.userMessage 
                   : message.role === 'system'
-                  ? [styles.systemMessage, { backgroundColor: isDarkMode ? '#2C2C2E' : '#E5E5EA' }]
+                  ? [styles.systemMessage, { backgroundColor: isDarkMode ? '#2C2C2E' : '#F7F7F7' }]
                   : styles.aiMessage
               ]}
             >
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   systemMessageText: {
-    fontSize: 14,
+    fontSize: 10,
     fontStyle: 'italic',
   },
   messageText: {
