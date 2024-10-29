@@ -23,6 +23,7 @@ export const ChatProvider = ({ children }) => {
   const [builtInKeyCode, setBuiltInKeyCode] = useState('4084'); // Temp code for testing without needing to subscribe
   const [grokApiKey, setGrokApiKey] = useState('');
   const [useGrokKey, setUseGrokKey] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const changeModel = async (newModel) => {
     console.log('Model changed to:', newModel);
@@ -224,16 +225,17 @@ export const ChatProvider = ({ children }) => {
       console.log('User message:', userMessage);
       
       if (isImageRequest) {
-        console.log('Starting image generation...');
-        const openai = new OpenAI({
-          apiKey: useBuiltInKey ? OPENAI_API_KEY : apiKey,
-          baseURL: "https://api.openai.com/v1",
-          ...(ALLOW_BROWSER && { dangerouslyAllowBrowser: true })
-        });
-        
-        console.log('OpenAI client created');
-        
+        setIsGeneratingImage(true);
         try {
+          console.log('Starting image generation...');
+          const openai = new OpenAI({
+            apiKey: useBuiltInKey ? OPENAI_API_KEY : apiKey,
+            baseURL: "https://api.openai.com/v1",
+            ...(ALLOW_BROWSER && { dangerouslyAllowBrowser: true })
+          });
+          
+          console.log('OpenAI client created');
+          
           console.log('Sending image generation request...');
           const response = await openai.images.generate({
             model: "dall-e-3",
@@ -262,24 +264,9 @@ export const ChatProvider = ({ children }) => {
           await saveChat(updatedChat);
           
         } catch (error) {
-          console.error('Error generating image:', error);
-          console.error('Error details:', error.response?.data || error.message);
-          
-          let errorMessage = 'Sorry, I encountered an error. Please try again.';
-          if (error.response?.status === 401) {
-            errorMessage = 'Invalid API key. Please check your API key in the settings or enable the built-in key.';
-          } else if (error.message.includes('No API key available')) {
-            errorMessage = error.message;
-          }
-
-          // Add error message to the chat
-          const updatedChatsWithError = updatedChatsWithUserMessage.map(chat => 
-            chat.id === currentChatId 
-              ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: errorMessage }] }
-              : chat
-          );
-          setChats(updatedChatsWithError);
-          await saveChat(updatedChatsWithError.find(chat => chat.id === currentChatId));
+          console.error('Image generation error:', error);
+        } finally {
+          setIsGeneratingImage(false);
         }
       } else {
         const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
@@ -459,6 +446,7 @@ export const ChatProvider = ({ children }) => {
       setGrokApiKey,
       useGrokKey,
       setUseGrokKey,
+      isGeneratingImage,
     }}>
       {children}
     </ChatContext.Provider>

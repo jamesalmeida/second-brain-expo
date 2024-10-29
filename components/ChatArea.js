@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, Image, Keyboard, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform, Image, Keyboard, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { useChat } from '../contexts/ChatContext';
 import brainLogo from '../assets/images/brain-gray.png'; // Adjust the path as necessary
 import { useTheme } from '../contexts/ThemeContext';
@@ -7,7 +7,7 @@ import Markdown from 'react-native-markdown-display';
 import { Image as ExpoImage } from 'expo-image';
 
 const ChatArea = ({ bottomBarRef, openSettings }) => {
-  const { chats, currentChatId } = useChat();
+  const { chats, currentChatId, isGeneratingImage } = useChat();
   const scrollViewRef = useRef();
   const [isAtBottom, setIsAtBottom] = useState(true);
   const logoScale = useRef(new Animated.Value(1)).current;
@@ -109,56 +109,64 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
             </TouchableOpacity>
           </View>
         ) : (
-          messages.map((message, index) => {
-            // If it's an image message, render just the image
-            if (message.content.startsWith('<img')) {
-              const srcMatch = message.content.match(/src="([^"]+)"/);
-              if (srcMatch && srcMatch[1]) {
-                return (
-                  <ExpoImage
-                    key={index}
-                    source={{ uri: srcMatch[1] }}
-                    style={[styles.messageImage, { alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start' }]}
-                    contentFit="cover"
-                    transition={200}
-                  />
-                );
+          <>
+            {messages.map((message, index) => {
+              // If it's an image message, render just the image
+              if (message.content.startsWith('<img')) {
+                const srcMatch = message.content.match(/src="([^"]+)"/);
+                if (srcMatch && srcMatch[1]) {
+                  return (
+                    <ExpoImage
+                      key={index}
+                      source={{ uri: srcMatch[1] }}
+                      style={[styles.messageImage, { alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start' }]}
+                      contentFit="cover"
+                      transition={200}
+                    />
+                  );
+                }
               }
-            }
-            
-            // For non-image messages, render in a bubble
-            return (
-              <View 
-                key={index} 
-                style={[
-                  styles.messageBubble, 
-                  message.role === 'user' 
-                    ? styles.userMessage : message.role === 'system'
-                    ? styles.systemMessage : styles.aiMessage
-                ]}
-              >
-                <Markdown 
-                  style={{
-                    body: {
-                      color: message.role === 'user' 
-                        ? '#fff' 
-                        : message.role === 'system'
-                        ? isDarkMode ? '#8E8E93' : '#666666'
-                        : '#000'
-                    },
-                    paragraph: message.role === 'user' 
-                      ? styles.userParagraph
-                      : message.role === 'system'
-                      ? styles.systemParagraph
-                      : styles.aiParagraph
-                  }}
-                  rules={markdownRules}
+              
+              // For non-image messages, render in a bubble
+              return (
+                <View 
+                  key={index} 
+                  style={[
+                    styles.messageBubble, 
+                    message.role === 'user' 
+                      ? styles.userMessage : message.role === 'system'
+                      ? styles.systemMessage : styles.aiMessage
+                  ]}
                 >
-                  {message.content}
-                </Markdown>
+                  <Markdown 
+                    style={{
+                      body: {
+                        color: message.role === 'user' 
+                          ? '#fff' 
+                          : message.role === 'system'
+                          ? isDarkMode ? '#8E8E93' : '#666666'
+                          : '#000'
+                      },
+                      paragraph: message.role === 'user' 
+                        ? styles.userParagraph
+                        : message.role === 'system'
+                        ? styles.systemParagraph
+                        : styles.aiParagraph
+                    }}
+                    rules={markdownRules}
+                  >
+                    {message.content}
+                  </Markdown>
+                </View>
+              );
+            })}
+            {isGeneratingImage && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={styles.loadingText}>Generating image...</Text>
               </View>
-            );
-          })
+            )}
+          </>
         )}
       </ScrollView>
     </View>
@@ -230,6 +238,15 @@ const styles = StyleSheet.create({
   aiParagraph: {
     textAlign: 'left',
     color: '#000',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#8E8E93',
+    fontSize: 14,
   },
 });
 
