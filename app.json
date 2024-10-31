@@ -22,6 +22,9 @@
       "eas": {
         "projectId": "099473b6-1fc9-4247-9cd4-100e9325e2ba"
       }
+    },
+    "android": {
+      "package": "com.jamesadev.secondbrain"
     }
   }
 }
