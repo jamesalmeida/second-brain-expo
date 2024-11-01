@@ -1,5 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, Image, Keyboard, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform, Image, Keyboard, TouchableOpacity, Animated, ActivityIndicator, ActionSheetIOS, Share, Alert } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import * as MediaLibrary from 'expo-media-library';
+import * as FileSystem from 'expo-file-system';
 import { useChat } from '../contexts/ChatContext';
 import brainLogo from '../assets/images/brain-gray.png'; // Adjust the path as necessary
 import { useTheme } from '../contexts/ThemeContext';
@@ -90,6 +93,136 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
     }
   };
 
+  const handleLongPress = async (message) => {
+    const isImage = message.content.startsWith('<img');
+    
+    if (Platform.OS === 'ios') {
+      let options = ['Cancel'];
+      let actions = [];
+      
+      if (isImage) {
+        options.unshift('Save Image', 'Copy Image');
+        actions = ['save', 'copy'];
+      } else {
+        options.unshift('Copy Text');
+        actions = ['copy'];
+      }
+      
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          cancelButtonIndex: options.length - 1,
+        },
+        async (buttonIndex) => {
+          const action = actions[buttonIndex];
+          if (action === 'copy' && !isImage) {
+            await Clipboard.setStringAsync(message.content);
+          } else if (action === 'save' && isImage) {
+            await saveImage(message.content);
+          } else if (action === 'copy' && isImage) {
+            await copyImage(message.content);
+          }
+        }
+      );
+    } else {
+      // Android handling
+      if (isImage) {
+        Alert.alert(
+          'Image Options',
+          'Choose an action',
+          [
+            {
+              text: 'Save Image',
+              onPress: () => saveImage(message.content)
+            },
+            {
+              text: 'Copy Image',
+              onPress: () => copyImage(message.content)
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel'
+            }
+          ]
+        );
+      } else {
+        Alert.alert(
+          'Message Options',
+          'Choose an action',
+          [
+            {
+              text: 'Copy Text',
+              onPress: async () => await Clipboard.setStringAsync(message.content)
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel'
+            }
+          ]
+        );
+      }
+    }
+  };
+
+  const saveImage = async (content) => {
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please grant permission to save images');
+        return;
+      }
+
+      const srcMatch = content.match(/src="([^"]+)"/);
+      if (srcMatch && srcMatch[1]) {
+        const uri = srcMatch[1];
+        const fileUri = FileSystem.documentDirectory + 'temp_image.jpg';
+        
+        await FileSystem.downloadAsync(uri, fileUri);
+        await MediaLibrary.saveToLibraryAsync(fileUri);
+        await FileSystem.deleteAsync(fileUri);
+        
+        Alert.alert('Success', 'Image saved to gallery');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save image');
+      console.error(error);
+    }
+  };
+
+  const copyImage = async (content) => {
+    try {
+      const srcMatch = content.match(/src="([^"]+)"/);
+      if (srcMatch && srcMatch[1]) {
+        await Share.share({
+          url: srcMatch[1]
+        });
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to copy image');
+      console.error(error);
+    }
+  };
+
+  const getAnimatedScale = () => new Animated.Value(1);
+
+  const handlePressIn = (scale) => {
+    Animated.spring(scale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 0,
+    }).start();
+  };
+
+  const handlePressOut = (scale) => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 12,
+    }).start();
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -111,58 +244,85 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
         ) : (
           <>
             {messages.map((message, index) => {
+              const scale = getAnimatedScale();
+              
               // If it's an image message, render just the image
               if (message.content.startsWith('<img')) {
                 const srcMatch = message.content.match(/src="([^"]+)"/);
                 if (srcMatch && srcMatch[1]) {
                   return (
-                    <View key={index} style={[
-                      styles.imageContainer,
-                      { alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start' }
-                    ]}>
-                      <ExpoImage
-                        source={{ uri: srcMatch[1] }}
-                        style={styles.messageImage}
-                        contentFit="cover"
-                        transition={200}
-                      />
-                      <Text style={styles.imageCaption}>Generated by DALL-E 3</Text>
-                    </View>
+                    <TouchableOpacity
+                      key={index}
+                      onLongPress={() => handleLongPress(message)}
+                      onPressIn={() => handlePressIn(scale)}
+                      onPressOut={() => handlePressOut(scale)}
+                      delayLongPress={500}
+                      activeOpacity={1}
+                    >
+                      <Animated.View 
+                        style={[
+                          styles.imageContainer,
+                          { 
+                            alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
+                            transform: [{ scale }]
+                          }
+                        ]}
+                      >
+                        <ExpoImage
+                          source={{ uri: srcMatch[1] }}
+                          style={styles.messageImage}
+                          contentFit="cover"
+                          transition={200}
+                        />
+                        <Text style={styles.imageCaption}>Generated by DALL-E 3</Text>
+                      </Animated.View>
+                    </TouchableOpacity>
                   );
                 }
               }
               
               // For non-image messages, render in a bubble
               return (
-                <View 
-                  key={index} 
-                  style={[
-                    styles.messageBubble, 
-                    message.role === 'user' 
-                      ? styles.userMessage : message.role === 'system'
-                      ? styles.systemMessage : styles.aiMessage
-                  ]}
+                <TouchableOpacity
+                  key={index}
+                  onLongPress={() => handleLongPress(message)}
+                  onPressIn={() => handlePressIn(scale)}
+                  onPressOut={() => handlePressOut(scale)}
+                  delayLongPress={500}
+                  activeOpacity={1}
                 >
-                  <Markdown 
-                    style={{
-                      body: {
-                        color: message.role === 'user' 
-                          ? '#fff' 
-                          : message.role === 'system'
-                          ? isDarkMode ? '#8E8E93' : '#666666'
-                          : '#000'
-                      },
-                      paragraph: message.role === 'user' 
-                        ? styles.userParagraph
+                  <Animated.View 
+                    style={[
+                      styles.messageBubble, 
+                      message.role === 'user' 
+                        ? styles.userMessage 
                         : message.role === 'system'
-                        ? styles.systemParagraph
-                        : styles.aiParagraph
-                    }}
-                    rules={markdownRules}
+                        ? styles.systemMessage 
+                        : styles.aiMessage,
+                      { transform: [{ scale }] }
+                    ]}
                   >
-                    {message.content}
-                  </Markdown>
-                </View>
+                    <Markdown 
+                      style={{
+                        body: {
+                          color: message.role === 'user' 
+                            ? '#fff' 
+                            : message.role === 'system'
+                            ? isDarkMode ? '#8E8E93' : '#666666'
+                            : '#000'
+                        },
+                        paragraph: message.role === 'user' 
+                          ? styles.userParagraph
+                          : message.role === 'system'
+                          ? styles.systemParagraph
+                          : styles.aiParagraph
+                      }}
+                      rules={markdownRules}
+                    >
+                      {message.content}
+                    </Markdown>
+                  </Animated.View>
+                </TouchableOpacity>
               );
             })}
             {isGeneratingImage && (
