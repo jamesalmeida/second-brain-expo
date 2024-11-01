@@ -16,7 +16,9 @@
         "UISupportsDocumentBrowser": true,
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.jamesadev.secondbrain"
+      "bundleIdentifier": "com.jamesadev.secondbrain",
+      "requireFullScreen": false,
+      "supportsTablet": true
     },
     "extra": {
       "eas": {
