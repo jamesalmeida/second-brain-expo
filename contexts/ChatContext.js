@@ -204,6 +204,27 @@ export const ChatProvider = ({ children }) => {
     setChats(updatedChats);
   };
 
+  const functions = [
+    {
+      name: "generateImage",
+      description: "Generate an image based on the user's description",
+      parameters: {
+        type: "object",
+        properties: {
+          shouldGenerateImage: {
+            type: "boolean",
+            description: "Whether the user is requesting image generation"
+          },
+          imagePrompt: {
+            type: "string",
+            description: "The prompt to use for image generation"
+          }
+        },
+        required: ["shouldGenerateImage", "imagePrompt"]
+      }
+    }
+  ];
+
   const sendMessageToOpenAI = async (userMessage) => {
     // Add user message to the chat
     const updatedChatsWithUserMessage = chats.map(chat => 
@@ -217,56 +238,107 @@ export const ChatProvider = ({ children }) => {
       const currentChat = updatedChatsWithUserMessage.find(chat => chat.id === currentChatId);
       const messages = currentChat ? currentChat.messages : [];
       
-      // Check if the message is requesting image generation
-      const isImageRequest = userMessage.toLowerCase().includes('generate image') || 
-                            userMessage.toLowerCase().includes('create image') ||
-                            userMessage.toLowerCase().includes('draw');
-      console.log('Is image request:', isImageRequest);
-      console.log('User message:', userMessage);
+      const openai = new OpenAI({
+        apiKey: useBuiltInKey ? OPENAI_API_KEY : apiKey,
+        baseURL: "https://api.openai.com/v1",
+        ...(ALLOW_BROWSER && { dangerouslyAllowBrowser: true })
+      });
+
+      // First, ask the model if this is an image generation request
+      const functionResponse = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: userMessage }],
+        functions,
+        function_call: "auto"
+      });
+
+      const functionCall = functionResponse.choices[0].message.function_call;
       
-      if (isImageRequest) {
-        setIsGeneratingImage(true);
-        try {
-          console.log('Starting image generation...');
-          const openai = new OpenAI({
-            apiKey: useBuiltInKey ? OPENAI_API_KEY : apiKey,
-            baseURL: "https://api.openai.com/v1",
-            ...(ALLOW_BROWSER && { dangerouslyAllowBrowser: true })
-          });
-          
-          console.log('OpenAI client created');
-          
-          console.log('Sending image generation request...');
-          const response = await openai.images.generate({
-            model: "dall-e-3",
-            prompt: userMessage,
-            n: 1,
-            size: "1024x1024",
-          });
-          console.log('Image generation response received:', response);
+      if (functionCall && functionCall.name === "generateImage") {
+        const functionArgs = JSON.parse(functionCall.arguments);
+        
+        if (functionArgs.shouldGenerateImage) {
+          setIsGeneratingImage(true);
+          try {
+            console.log('Starting image generation...');
+            const response = await openai.images.generate({
+              model: "dall-e-3",
+              prompt: functionArgs.imagePrompt,
+              n: 1,
+              size: "1024x1024",
+            });
+            console.log('Image generation response received:', response);
 
-          const imageUrl = response.data[0].url;
-          console.log('Image URL:', imageUrl);
+            const imageUrl = response.data[0].url;
+            console.log('Image URL:', imageUrl);
 
-          const aiMessage = `<img src="${imageUrl}" alt="Generated Image" />`;
+            const aiMessage = `<img src="${imageUrl}" alt="Generated Image" />`;
+            console.log('AI Message:', aiMessage);
+
+            // Add AI response with image to the chat
+            const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
+              chat.id === currentChatId 
+                ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
+                : chat
+            );
+            setChats(updatedChatsWithAIResponse);
+            
+            // Save the updated chat
+            const updatedChat = updatedChatsWithAIResponse.find(chat => chat.id === currentChatId);
+            await saveChat(updatedChat);
+            
+          } catch (error) {
+            console.error('Image generation error:', error);
+          } finally {
+            setIsGeneratingImage(false);
+          }
+        } else {
+          const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
+          const isGrok = currentModel.toLowerCase().includes('grok');
+          
+          const activeApiKey = useBuiltInKey ? OPENAI_API_KEY : (isGrok ? grokApiKey : apiKey);
+          
+          if (!activeApiKey) {
+            throw new Error('No API key available. Please set an API key in the settings.');
+          }
+
+          let completion;
+          
+          if (isGrok) {
+            completion = await handleGrokRequest(messages, grokApiKey);
+          } else {
+            const openai = new OpenAI({
+              apiKey: activeApiKey,
+              baseURL: "https://api.openai.com/v1",
+              ...(ALLOW_BROWSER && { dangerouslyAllowBrowser: true })
+            });
+
+            completion = await openai.chat.completions.create({
+              model: apiModel,
+              messages: messages,
+            });
+          }
+
+          console.log('API Response:', completion);
+
+          if (!completion || !completion.choices || !completion.choices[0]) {
+            throw new Error('Invalid response from API');
+          }
+
+          const aiMessage = completion.choices[0].message.content;
           console.log('AI Message:', aiMessage);
 
-          // Add AI response with image to the chat
+          // Add AI response to the chat
           const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
             chat.id === currentChatId 
               ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
               : chat
           );
           setChats(updatedChatsWithAIResponse);
-          
+
           // Save the updated chat
           const updatedChat = updatedChatsWithAIResponse.find(chat => chat.id === currentChatId);
           await saveChat(updatedChat);
-          
-        } catch (error) {
-          console.error('Image generation error:', error);
-        } finally {
-          setIsGeneratingImage(false);
         }
       } else {
         const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
@@ -454,3 +526,25 @@ export const ChatProvider = ({ children }) => {
 };
 
 export const useChat = () => useContext(ChatContext);
+
+const handleGrokRequest = async (messages, grokApiKey) => {
+  const response = await fetch("https://api.x.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${grokApiKey}`,
+      "X-Api-Key": grokApiKey
+    },
+    body: JSON.stringify({
+      model: "grok-beta",
+      messages: messages
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(error);
+  }
+
+  return await response.json();
+};
