@@ -256,7 +256,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
                       onLongPress={() => handleLongPress(message)}
                       onPressIn={() => handlePressIn(scale)}
                       onPressOut={() => handlePressOut(scale)}
-                      delayLongPress={500}
+                      delayLongPress={200}
                       activeOpacity={1}
                     >
                       <Animated.View 
@@ -288,7 +288,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
                   onLongPress={() => handleLongPress(message)}
                   onPressIn={() => handlePressIn(scale)}
                   onPressOut={() => handlePressOut(scale)}
-                  delayLongPress={500}
+                  delayLongPress={200}
                   activeOpacity={1}
                 >
                   <Animated.View 
