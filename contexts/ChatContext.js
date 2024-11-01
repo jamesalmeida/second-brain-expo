@@ -204,10 +204,10 @@ export const ChatProvider = ({ children }) => {
     setChats(updatedChats);
   };
 
-  const functions = [
+  const openAIImageGenerationFunctions = [
     {
-      name: "generateImage",
-      description: "Generate an image based on the user's description",
+      name: "generateDallEImage",
+      description: "Generate an image using DALL-E based on the user's description",
       parameters: {
         type: "object",
         properties: {
@@ -217,7 +217,7 @@ export const ChatProvider = ({ children }) => {
           },
           imagePrompt: {
             type: "string",
-            description: "The prompt to use for image generation"
+            description: "The prompt to use for DALL-E image generation"
           }
         },
         required: ["shouldGenerateImage", "imagePrompt"]
@@ -248,13 +248,13 @@ export const ChatProvider = ({ children }) => {
       const functionResponse = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: userMessage }],
-        functions,
+        functions: openAIImageGenerationFunctions,
         function_call: "auto"
       });
 
       const functionCall = functionResponse.choices[0].message.function_call;
       
-      if (functionCall && functionCall.name === "generateImage") {
+      if (functionCall && functionCall.name === "generateDallEImage") {
         const functionArgs = JSON.parse(functionCall.arguments);
         
         if (functionArgs.shouldGenerateImage) {
