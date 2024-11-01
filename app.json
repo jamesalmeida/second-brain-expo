@@ -18,7 +18,8 @@
       },
       "bundleIdentifier": "com.jamesadev.secondbrain",
       "requireFullScreen": false,
-      "supportsTablet": true
+      "supportsTablet": true,
+      "userInterfaceStyle": "automatic"
     },
     "extra": {
       "eas": {
