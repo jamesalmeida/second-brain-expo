@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: 25,
-    marginHorizontal: 10,
+    // marginHorizontal: 10,
     paddingHorizontal: 10,
     minHeight: 50,
     maxHeight: 120, // Limits maximum height
