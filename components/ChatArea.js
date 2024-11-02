@@ -223,6 +223,97 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
     }).start();
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    scrollViewContent: {
+      flexGrow: 1,
+      padding: 10,
+      paddingBottom: 60,
+    },
+    messageBubble: {
+      maxWidth: '75%',
+      borderRadius: 18,
+      marginBottom: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 0,
+      overflow: 'hidden',
+    },
+    userMessage: {
+      alignSelf: 'flex-end',
+      backgroundColor: '#007AFF',
+      borderBottomRightRadius: 0,
+    },
+    aiMessage: {
+      alignSelf: 'flex-start',
+      backgroundColor: isDarkMode ? '#363638' : '#E9E9EB',
+      borderBottomLeftRadius: 0,
+    },
+    systemMessage: {
+      alignSelf: 'center',
+      borderRadius: 12,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      marginVertical: 8,
+      backgroundColor: isDarkMode ? 'transparent' : '#F7F7F7',
+    },
+    emptyChatContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    logo: {
+      width: 100,
+      height: 100,
+      resizeMode: 'contain',
+    },
+    messageImage: {
+      width: '100%',
+      height: 300,
+      borderRadius: 18,
+    },
+    userParagraph: {
+      textAlign: 'right',
+      color: '#fff',
+    },
+    systemParagraph: {
+      textAlign: 'center',
+      fontStyle: 'italic',
+      fontSize: 12,
+      color: isDarkMode ? '#8E8E93' : '#8E8E93',
+      backgroundColor: isDarkMode ? 'transparent' : '#F7F7F7',
+      padding: 5,
+      paddingHorizontal: 40,
+      borderRadius: 12,
+    },
+    aiParagraph: {
+      textAlign: 'left',
+      color: isDarkMode ? '#fff' : '#000',
+    },
+    loadingContainer: {
+      alignItems: 'center',
+      padding: 20,
+    },
+    loadingText: {
+      marginTop: 10,
+      color: '#8E8E93',
+      fontSize: 14,
+    },
+    imageCaption: {
+      fontSize: 10,
+      color: '#8E8E93',
+      textAlign: 'left',
+      marginLeft: 10,
+      marginTop: 4,
+      marginBottom: 10,
+    },
+    imageContainer: {
+      width: '75%',
+      marginBottom: 10,
+    },
+  });
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -308,8 +399,8 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
                           color: message.role === 'user' 
                             ? '#fff' 
                             : message.role === 'system'
-                            ? isDarkMode ? '#8E8E93' : '#666666'
-                            : '#000'
+                            ? isDarkMode ? '#fff' : '#666666'
+                            : isDarkMode ? '#fff' : '#000'
                         },
                         paragraph: message.role === 'user' 
                           ? styles.userParagraph
@@ -337,97 +428,5 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollViewContent: {
-    flexGrow: 1,
-    padding: 10,
-    paddingBottom: 60, // Add some bottom padding to prevent overlap with the input
-  },
-  messageBubble: {
-    maxWidth: '75%',
-    borderRadius: 18,
-    marginBottom: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 0,
-    overflow: 'hidden',
-  },
-  userMessage: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#007AFF',
-    borderBottomRightRadius: 0,
-  },
-  aiMessage: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#E9E9EB',
-    borderBottomLeftRadius: 0,
-  },
-  systemMessage: {
-    alignSelf: 'center',
-    borderRadius: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginVertical: 8,
-  },
-  emptyChatContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    resizeMode: 'contain',
-  },
-  messageImage: {
-    width: '100%',
-    height: 300,
-    borderRadius: 18,
-  },
-  userParagraph: {
-    textAlign: 'right',
-    color: '#fff',
-  },
-  systemParagraph: {
-    textAlign: 'center',
-    fontStyle: 'italic',
-    fontSize: 12,
-    color: '#8E8E93',
-    // borderBottomWidth: 1,
-    // borderBottomColor: '#8E8E93',
-    backgroundColor: '#F7F7F7',
-    padding: 5,
-    paddingHorizontal: 40,
-    borderRadius: 12,
-  },
-  aiParagraph: {
-    textAlign: 'left',
-    color: '#000',
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    padding: 20,
-  },
-  loadingText: {
-    marginTop: 10,
-    color: '#8E8E93',
-    fontSize: 14,
-  },
-  imageCaption: {
-    fontSize: 10,
-    color: '#8E8E93',
-    textAlign: 'left',
-    marginLeft: 10,
-    marginTop: 4,
-    marginBottom: 10,
-  },
-  imageContainer: {
-    width: '75%',
-    marginBottom: 10,
-  },
-});
 
 export default ChatArea;
