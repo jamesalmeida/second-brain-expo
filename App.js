@@ -1,6 +1,6 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { SafeAreaView, View, TouchableOpacity, Animated } from 'react-native';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { SafeAreaView, View, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { NavigationContainer } from '@react-navigation/native';
 import { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
@@ -13,6 +13,7 @@ import { ChatProvider, useChat } from './contexts/ChatContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { Platform } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native';
+import { useDeviceType } from './hooks/useDeviceType';
 
 const Drawer = createDrawerNavigator();
 
@@ -79,6 +80,11 @@ export default function App() {
     );
   };
 
+  // Adjust the drawer width based on the device and orientation
+  const { isTablet, width, height } = useDeviceType();
+  const isLandscape = width > height;
+  const drawerWidth = isTablet ? (isLandscape ? '40%' : '33%') : '89%';
+
   return (
     <ChatProvider>
       <ThemeProvider>
@@ -94,7 +100,7 @@ export default function App() {
               )}
               screenOptions={{
                 drawerStyle: {
-                  width: '89%',
+                  width: drawerWidth,
                 },
                 overlayColor: 'rgba(0,0,0,0.5)',
               }}
