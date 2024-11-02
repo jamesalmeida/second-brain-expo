@@ -277,7 +277,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
       borderRadius: 18,
     },
     userChatText: {
-      textAlign: 'right',
+      textAlign: 'left',
       color: '#fff',
       marginTop: 0,
       marginBottom: 0,
