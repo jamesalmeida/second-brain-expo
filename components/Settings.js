@@ -34,9 +34,18 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
       const storedApiKey = await AsyncStorage.getItem('openai_api_key');
       if (storedApiKey !== null) {
         setApiKey(storedApiKey);
+        setIsApiKeyValid(true);
+        setIsApiKeyFrozen(true);
+      }
+
+      const storedGrokApiKey = await AsyncStorage.getItem('grok_api_key');
+      if (storedGrokApiKey !== null) {
+        setGrokApiKey(storedGrokApiKey);
+        setIsGrokApiKeyValid(true);
+        setIsGrokApiKeyFrozen(true);
       }
     } catch (error) {
-      console.error('Error loading API key:', error);
+      console.error('Error loading API keys:', error);
     }
   };
 
