@@ -65,7 +65,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
         <ExpoImage
           key={node.key}
           source={{ uri: node.target }}
-          style={{ width: 300, height: 300, borderRadius: 10, marginVertical: 10 }}
+          style={{ width: 300, height: 300, borderRadius: 10 }}
           contentFit="cover"
           transition={200}
         />
@@ -81,7 +81,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
             <ExpoImage
               key={node.key}
               source={{ uri: srcMatch[1] }}
-              style={{ width: 300, height: 300, borderRadius: 10, marginVertical: 10 }}
+              style={{ width: 300, height: 300, borderRadius: 10 }}
               contentFit="cover"
               transition={200}
             />
@@ -232,31 +232,34 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
       padding: 10,
       paddingBottom: 60,
     },
-    messageBubble: {
+    chatBubbles: {
       maxWidth: '75%',
       borderRadius: 18,
-      marginBottom: 10,
       paddingHorizontal: 12,
-      paddingVertical: 0,
+      paddingVertical: 8,
       overflow: 'hidden',
     },
-    userMessage: {
+    userChatBubbles: {
       alignSelf: 'flex-end',
       backgroundColor: '#007AFF',
       borderBottomRightRadius: 0,
+      marginBottom: 10,
     },
-    aiMessage: {
+    aiChatBubbles: {
       alignSelf: 'flex-start',
       backgroundColor: isDarkMode ? '#363638' : '#E9E9EB',
       borderBottomLeftRadius: 0,
+      marginBottom: 10,
     },
-    systemMessage: {
+    systemChatBubbles: {
       alignSelf: 'center',
+      maxWidth: '75%',
       borderRadius: 12,
       paddingVertical: 6,
       paddingHorizontal: 12,
-      marginVertical: 8,
+      marginBottom: 10,
       backgroundColor: isDarkMode ? 'transparent' : '#F7F7F7',
+      overflow: 'hidden',
     },
     emptyChatContainer: {
       flex: 1,
@@ -273,23 +276,25 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
       height: 300,
       borderRadius: 18,
     },
-    userParagraph: {
+    userChatText: {
       textAlign: 'right',
       color: '#fff',
+      marginTop: 0,
+      marginBottom: 0,
     },
-    systemParagraph: {
-      textAlign: 'center',
-      fontStyle: 'italic',
-      fontSize: 12,
-      color: isDarkMode ? '#8E8E93' : '#8E8E93',
-      backgroundColor: isDarkMode ? 'transparent' : '#F7F7F7',
-      padding: 5,
-      paddingHorizontal: 40,
-      borderRadius: 12,
-    },
-    aiParagraph: {
+    aiChatText: {
       textAlign: 'left',
       color: isDarkMode ? '#fff' : '#000',
+      marginTop: 0,
+      marginBottom: 0,
+    },
+    systemChatText: {
+      textAlign: 'center',
+      color: isDarkMode ? '#8E8E93' : '#8E8E93',
+      fontSize: 12,
+      fontStyle: 'italic',
+      marginTop: 0,
+      marginBottom: 0,
     },
     loadingContainer: {
       alignItems: 'center',
@@ -384,12 +389,14 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
                 >
                   <Animated.View 
                     style={[
-                      styles.messageBubble, 
-                      message.role === 'user' 
-                        ? styles.userMessage 
-                        : message.role === 'system'
-                        ? styles.systemMessage 
-                        : styles.aiMessage,
+                      message.role === 'system'
+                        ? styles.systemChatBubbles
+                        : [
+                            styles.chatBubbles,
+                            message.role === 'user'
+                              ? styles.userChatBubbles
+                              : styles.aiChatBubbles
+                          ],
                       { transform: [{ scale }] }
                     ]}
                   >
@@ -399,14 +406,18 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
                           color: message.role === 'user' 
                             ? '#fff' 
                             : message.role === 'system'
-                            ? isDarkMode ? '#fff' : '#666666'
-                            : isDarkMode ? '#fff' : '#000'
+                            ? isDarkMode ? '#8E8E93' : '#8E8E93'
+                            : isDarkMode ? '#fff' : '#000',
+                          ...(message.role === 'system' && {
+                            marginTop: 0,
+                            marginBottom: 0,
+                          })
                         },
-                        paragraph: message.role === 'user' 
-                          ? styles.userParagraph
-                          : message.role === 'system'
-                          ? styles.systemParagraph
-                          : styles.aiParagraph
+                        paragraph: {
+                          ...(message.role === 'user' && styles.userChatText),
+                          ...(message.role === 'system' && styles.systemChatText),
+                          ...(message.role === 'assistant' && styles.aiChatText)
+                        }
                       }}
                       rules={markdownRules}
                     >
