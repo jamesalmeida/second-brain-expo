@@ -130,11 +130,11 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
       let actions = [];
       
       if (isImage) {
-        options.unshift('Save Image', 'Copy Image', 'More Info');
-        actions = ['save', 'copy', 'moreInfo'];
+        options.unshift('Share', 'Save Image', 'More Info');
+        actions = ['share', 'save', 'moreInfo'];
       } else {
-        options.unshift('Copy Text', 'Share');
-        actions = ['copy', 'share'];
+        options.unshift('Share', 'Copy Text');
+        actions = ['share', 'copy'];
       }
       
       ActionSheetIOS.showActionSheetWithOptions(
@@ -148,8 +148,23 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
             await Clipboard.setStringAsync(message.content);
           } else if (action === 'save' && isImage) {
             await saveImage(message.content);
-          } else if (action === 'copy' && isImage) {
-            await copyImage(message.content);
+          } else if (action === 'share') {
+            try {
+              if (isImage) {
+                const srcMatch = message.content.match(/src="([^"]+)"/);
+                if (srcMatch && srcMatch[1]) {
+                  await Share.share({
+                    url: srcMatch[1]  // iOS will handle the image URL appropriately
+                  });
+                }
+              } else {
+                await Share.share({
+                  message: message.content
+                });
+              }
+            } catch (error) {
+              console.error('Error sharing:', error);
+            }
           }
         }
       );
@@ -163,10 +178,6 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
             {
               text: 'Save Image',
               onPress: () => saveImage(message.content)
-            },
-            {
-              text: 'Copy Image',
-              onPress: () => copyImage(message.content)
             },
             {
               text: 'Cancel',
