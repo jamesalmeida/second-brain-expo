@@ -167,7 +167,10 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
 
   const saveImage = async (content) => {
     try {
+      console.log('Starting image save process...');
       const { status } = await MediaLibrary.requestPermissionsAsync();
+      console.log('Media Library permission status:', status);
+      
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Please grant permission to save images');
         return;
@@ -176,17 +179,33 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
       const srcMatch = content.match(/src="([^"]+)"/);
       if (srcMatch && srcMatch[1]) {
         const uri = srcMatch[1];
-        const fileUri = FileSystem.documentDirectory + 'temp_image.jpg';
+        const fileUri = `${FileSystem.cacheDirectory}temp_image.jpg`;
+        console.log('Source URI:', uri);
+        console.log('Target file URI:', fileUri);
         
-        await FileSystem.downloadAsync(uri, fileUri);
-        await MediaLibrary.saveToLibraryAsync(fileUri);
-        await FileSystem.deleteAsync(fileUri);
+        console.log('Starting download...');
+        const downloadResult = await FileSystem.downloadAsync(uri, fileUri);
+        console.log('Download result:', downloadResult);
         
-        Alert.alert('Success', 'Image saved to gallery');
+        if (downloadResult.status === 200) {
+          console.log('Download successful, saving to media library...');
+          const asset = await MediaLibrary.createAssetAsync(downloadResult.uri);
+          console.log('Asset created:', asset);
+          
+          console.log('Cleaning up temporary file...');
+          await FileSystem.deleteAsync(fileUri, { idempotent: true });
+          console.log('Temporary file deleted');
+          
+          Alert.alert('Success', 'Image saved to gallery');
+        } else {
+          console.log('Download failed with status:', downloadResult.status);
+          throw new Error('Download failed');
+        }
       }
     } catch (error) {
+      console.error('Error in saveImage:', error);
+      console.error('Error details:', error.message);
       Alert.alert('Error', 'Failed to save image');
-      console.error(error);
     }
   };
 
