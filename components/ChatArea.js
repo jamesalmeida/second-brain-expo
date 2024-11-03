@@ -9,6 +9,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import Markdown from 'react-native-markdown-display';
 import { Image as ExpoImage } from 'expo-image';
 import ImageMessage from './ImageMessage';
+import { useSharedValue } from 'react-native-reanimated';
 
 const ChatArea = ({ bottomBarRef, openSettings }) => {
   const { chats, currentChatId, isGeneratingImage } = useChat();
@@ -16,6 +17,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const logoScale = useRef(new Animated.Value(1)).current;
   const { isDarkMode } = useTheme();
+  const [flippedMessageIndex, setFlippedMessageIndex] = useState(null);
 
   const currentChat = chats.find(chat => chat.id === currentChatId);
   const messages = currentChat ? currentChat.messages : [];
@@ -165,6 +167,12 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
             } catch (error) {
               console.error('Error sharing:', error);
             }
+          } else if (action === 'moreInfo' && isImage) {
+            // Find the ImageMessage component and trigger its flip
+            const messageIndex = messages.findIndex(m => m === message);
+            if (messageIndex >= 0) {
+              setFlippedMessageIndex(messageIndex);
+            }
           }
         }
       );
@@ -260,26 +268,6 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
       Alert.alert('Error', 'Failed to copy image');
       console.error(error);
     }
-  };
-
-  const getAnimatedScale = () => new Animated.Value(1);
-
-  const handlePressIn = (scale) => {
-    Animated.spring(scale, {
-      toValue: 0.97,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 0,
-    }).start();
-  };
-
-  const handlePressOut = (scale) => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 12,
-    }).start();
   };
 
   const styles = StyleSheet.create({
@@ -382,33 +370,25 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
         ) : (
           <>
             {messages.map((message, index) => {
-              const scale = getAnimatedScale();
-              
-              // If it's an image message, render just the image
               if (message.content.startsWith('<img')) {
                 return (
                   <ImageMessage
                     key={index}
                     message={message}
-                    scale={scale}
                     handleLongPress={handleLongPress}
-                    handlePressIn={handlePressIn}
-                    handlePressOut={handlePressOut}
+                    isFlipped={index === flippedMessageIndex}
+                    onFlipEnd={() => setFlippedMessageIndex(null)}
                   />
                 );
               }
               
-              // For non-image messages, render in a bubble
               return (
                 <TouchableOpacity
                   key={index}
                   onLongPress={() => handleLongPress(message)}
-                  onPressIn={() => handlePressIn(scale)}
-                  onPressOut={() => handlePressOut(scale)}
-                  delayLongPress={200}
                   activeOpacity={1}
                 >
-                  <Animated.View 
+                  <View 
                     style={[
                       message.role === 'system'
                         ? styles.systemChatBubbles
@@ -417,8 +397,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
                             message.role === 'user'
                               ? styles.userChatBubbles
                               : styles.aiChatBubbles
-                          ],
-                      { transform: [{ scale }] }
+                          ]
                     ]}
                   >
                     <Markdown 
@@ -444,7 +423,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
                     >
                       {message.content}
                     </Markdown>
-                  </Animated.View>
+                  </View>
                 </TouchableOpacity>
               );
             })}
