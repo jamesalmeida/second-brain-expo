@@ -10,6 +10,7 @@ import Markdown from 'react-native-markdown-display';
 import { Image as ExpoImage } from 'expo-image';
 import ImageMessage from './ImageMessage';
 import { useSharedValue } from 'react-native-reanimated';
+import ChatBubble from './ChatBubble';
 
 const ChatArea = ({ bottomBarRef, openSettings }) => {
   const { chats, currentChatId, isGeneratingImage } = useChat();
@@ -408,48 +409,14 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
               }
               
               return (
-                <TouchableOpacity
+                <ChatBubble
                   key={index}
-                  onLongPress={() => handleLongPress(message, index)}
-                  activeOpacity={1}
-                >
-                  <View 
-                    style={[
-                      message.role === 'system'
-                        ? styles.systemChatBubbles
-                        : [
-                            styles.chatBubbles,
-                            message.role === 'user'
-                              ? styles.userChatBubbles
-                              : styles.aiChatBubbles
-                          ]
-                    ]}
-                  >
-                    <Markdown 
-                      style={{
-                        body: {
-                          color: message.role === 'user' 
-                            ? '#fff' 
-                            : message.role === 'system'
-                            ? isDarkMode ? '#8E8E93' : '#8E8E93'
-                            : isDarkMode ? '#fff' : '#000',
-                          ...(message.role === 'system' && {
-                            marginTop: 0,
-                            marginBottom: 0,
-                          })
-                        },
-                        paragraph: {
-                          ...(message.role === 'user' && styles.userChatText),
-                          ...(message.role === 'system' && styles.systemChatText),
-                          ...(message.role === 'assistant' && styles.aiChatText)
-                        }
-                      }}
-                      rules={markdownRules}
-                    >
-                      {message.content}
-                    </Markdown>
-                  </View>
-                </TouchableOpacity>
+                  message={message}
+                  styles={styles}
+                  isDarkMode={isDarkMode}
+                  handleLongPress={handleLongPress}
+                  markdownRules={markdownRules}
+                />
               );
             })}
             {isGeneratingImage && (
