@@ -97,16 +97,44 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
   const handleLongPress = async (message) => {
     const isImage = message.content.startsWith('<img');
     
+    if (Platform.OS === 'web') {
+      // Web handling
+      if (isImage) {
+        const srcMatch = message.content.match(/src="([^"]+)"/);
+        if (srcMatch && srcMatch[1]) {
+          try {
+            // Create a temporary anchor element for downloading
+            const link = document.createElement('a');
+            link.href = srcMatch[1];
+            link.download = 'image.jpg'; // Default filename
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } catch (error) {
+            console.error('Error downloading image:', error);
+          }
+        }
+      } else {
+        // For text messages on web
+        try {
+          await Clipboard.setStringAsync(message.content);
+        } catch (error) {
+          console.error('Error copying text:', error);
+        }
+      }
+      return;
+    }
+    
     if (Platform.OS === 'ios') {
       let options = ['Cancel'];
       let actions = [];
       
       if (isImage) {
-        options.unshift('Save Image', 'Copy Image');
-        actions = ['save', 'copy'];
+        options.unshift('Save Image', 'Copy Image', 'More Info');
+        actions = ['save', 'copy', 'moreInfo'];
       } else {
-        options.unshift('Copy Text');
-        actions = ['copy'];
+        options.unshift('Copy Text', 'Share');
+        actions = ['copy', 'share'];
       }
       
       ActionSheetIOS.showActionSheetWithOptions(
