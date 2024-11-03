@@ -109,6 +109,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingVertical: 8,
     maxHeight: 120, // Matches container maxHeight
+    // Below are for web only
+    alignContent: 'center', 
+    outlineStyle: 'none', 
+    borderWidth: 0, 
   },
   iconButton: {
     padding: 5,
