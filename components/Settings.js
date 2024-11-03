@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Slider from '@react-native-community/slider';
 import { OpenAI } from 'openai';
+import * as Calendar from 'expo-calendar';
 
 const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdrop }) => {
   const { isDarkMode, themePreference, setTheme } = useTheme();
@@ -24,9 +25,12 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
   const [isApiKeyFrozen, setIsApiKeyFrozen] = useState(false);
   const [isGrokApiKeyValid, setIsGrokApiKeyValid] = useState(false);
   const [isGrokApiKeyFrozen, setIsGrokApiKeyFrozen] = useState(false);
+  const [hasCalendarPermission, setHasCalendarPermission] = useState(false);
+  const [hasReminderPermission, setHasReminderPermission] = useState(false);
 
   useEffect(() => {
     loadApiKey();
+    checkPermissions();
   }, []);
 
   const loadApiKey = async () => {
@@ -133,6 +137,40 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
     }
   };
 
+  const checkPermissions = async () => {
+    const calendarStatus = await Calendar.getCalendarPermissionsAsync();
+    setHasCalendarPermission(calendarStatus.status === 'granted');
+    
+    const reminderStatus = await Calendar.getRemindersPermissionsAsync();
+    setHasReminderPermission(reminderStatus.status === 'granted');
+  };
+
+  const toggleCalendarAccess = async () => {
+    if (!hasCalendarPermission) {
+      const { status } = await Calendar.requestCalendarPermissionsAsync();
+      setHasCalendarPermission(status === 'granted');
+    } else {
+      Alert.alert(
+        'Revoke Calendar Access',
+        'To revoke calendar access, please go to your device settings.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const toggleReminderAccess = async () => {
+    if (!hasReminderPermission) {
+      const { status } = await Calendar.requestRemindersPermissionsAsync();
+      setHasReminderPermission(status === 'granted');
+    } else {
+      Alert.alert(
+        'Revoke Reminders Access',
+        'To revoke reminders access, please go to your device settings.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
   const backgroundColor = isDarkMode ? '#1c1c1e' : 'white';
   const textColor = isDarkMode ? '#ffffff' : '#000000';
   const borderColor = isDarkMode ? '#2c2c2e' : '#cccccc';
@@ -219,14 +257,7 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           </View>
         </View>
 
-        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <Text style={{ color: textColor }}>Use Built-in API Key:</Text>
-          <Switch
-            value={useBuiltInKey}
-            onValueChange={toggleBuiltInKey}
-          />
-        </View>
-
+        {/* OPENAI API KEY */}
         <View style={[styles.settingItem, { borderBottomColor: borderColor, opacity: useBuiltInKey ? 0.5 : 1, flexDirection: 'column', alignItems: 'flex-start' }]}>
           <View style={styles.labelContainer}>
             <Text style={{ color: textColor }}>Use Your Own OpenAI API Key:</Text>
@@ -270,6 +301,7 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           </TouchableOpacity>
         </View>
 
+        {/* GROK API KEY */}
         <View style={[styles.settingItem, { borderBottomColor: borderColor, opacity: useBuiltInKey ? 0.5 : 1, flexDirection: 'column', alignItems: 'flex-start' }]}>
           <View style={styles.labelContainer}>
             <Text style={{ color: textColor }}>Grok API Key:</Text>
@@ -318,18 +350,26 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
         </View>
 
         <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+          <Text style={{ color: textColor }}>Use Built-in API Key:</Text>
+          <Switch
+            value={useBuiltInKey}
+            onValueChange={toggleBuiltInKey}
+          />
+        </View>
+
+        {/* <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <Text style={{ color: textColor }}>AI Voice On/Off</Text>
           <Switch
             value={false} // Placeholder value
             onValueChange={() => {}} // Placeholder function
           />
-        </View>
+        </View> */}
 
-        <TouchableOpacity style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+        {/* <TouchableOpacity style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <Text style={{ color: textColor }}>Choose AI Voice</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
-        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+        {/* <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <Text style={{ color: textColor }}>AI Voice Speed</Text>
           <Slider
             style={{width: 200, height: 40}}
@@ -339,6 +379,36 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             onValueChange={() => {}} // Placeholder function
             minimumTrackTintColor="#FFFFFF"
             maximumTrackTintColor="#000000"
+          />
+        </View> */}
+
+        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+          <View style={styles.settingItemContent}>
+            <Text style={{ color: textColor }}>Calendar Access</Text>
+            {hasCalendarPermission && (
+              <Text style={[styles.permissionStatus, { color: textColor }]}>
+                Granted
+              </Text>
+            )}
+          </View>
+          <Switch
+            value={hasCalendarPermission}
+            onValueChange={toggleCalendarAccess}
+          />
+        </View>
+
+        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+          <View style={styles.settingItemContent}>
+            <Text style={{ color: textColor }}>Reminders Access</Text>
+            {hasReminderPermission && (
+              <Text style={[styles.permissionStatus, { color: textColor }]}>
+                Granted
+              </Text>
+            )}
+          </View>
+          <Switch
+            value={hasReminderPermission}
+            onValueChange={toggleReminderAccess}
           />
         </View>
 
@@ -406,6 +476,11 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: 15,
     borderBottomWidth: 1,
+  },
+  settingItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   input: {
     borderWidth: 1,
@@ -521,6 +596,18 @@ const styles = StyleSheet.create({
   activeThemeButton: {
     backgroundColor: '#007AFF',
     borderColor: '#007AFF',
+  },
+  grantedButton: {
+    backgroundColor: '#34C759',
+  },
+  columnSettingItem: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  permissionStatus: {
+    fontSize: 12,
+    color: '#34C759',
+    marginLeft: 8,
   },
 });
 

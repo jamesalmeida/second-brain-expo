@@ -14,7 +14,9 @@
         "UIFileSharingEnabled": true,
         "LSSupportsOpeningDocumentsInPlace": true,
         "UISupportsDocumentBrowser": true,
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCalendarsUsageDescription": "This app needs access to your calendar to manage events",
+        "NSRemindersUsageDescription": "This app needs access to manage reminders"
       },
       "bundleIdentifier": "com.jamesadev.secondbrain",
       "requireFullScreen": false,
