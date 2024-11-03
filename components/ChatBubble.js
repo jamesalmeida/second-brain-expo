@@ -11,7 +11,7 @@ const ChatBubble = ({ message, styles, isDarkMode, handleLongPress, markdownRule
   const scale = useSharedValue(1);
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.95);
+    scale.value = withSpring(0.98);
   };
 
   const handlePressOut = () => {

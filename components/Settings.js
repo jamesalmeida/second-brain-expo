@@ -10,7 +10,7 @@ import Slider from '@react-native-community/slider';
 import { OpenAI } from 'openai';
 
 const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdrop }) => {
-  const { isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode, themePreference, setTheme } = useTheme();
   const { 
     apiKey, setApiKey, 
     grokApiKey, setGrokApiKey,
@@ -181,13 +181,42 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
         <Text style={[styles.settingsTitle, { color: textColor }]}>🧠 Settings</Text>
 
         <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <Text style={{ color: textColor }}>
-            {isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          </Text>
-          <Switch
-            value={isDarkMode}
-            onValueChange={toggleTheme}
-          />
+          <Text style={{ color: textColor }}>Theme</Text>
+          <View style={styles.themeButtonGroup}>
+            <TouchableOpacity 
+              style={[
+                styles.themeButton, 
+                themePreference === 'light' && styles.activeThemeButton,
+                { borderColor }
+              ]}
+              onPress={() => setTheme('light')}
+            >
+              <Ionicons name="sunny" size={20} color={textColor} />
+              <Text style={{ color: textColor, marginLeft: 5 }}>Light</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                styles.themeButton, 
+                themePreference === 'system' && styles.activeThemeButton,
+                { borderColor }
+              ]}
+              onPress={() => setTheme('system')}
+            >
+              <Ionicons name="phone-portrait" size={20} color={textColor} />
+              <Text style={{ color: textColor, marginLeft: 5 }}>System</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                styles.themeButton, 
+                themePreference === 'dark' && styles.activeThemeButton,
+                { borderColor }
+              ]}
+              onPress={() => setTheme('dark')}
+            >
+              <Ionicons name="moon" size={20} color={textColor} />
+              <Text style={{ color: textColor, marginLeft: 5 }}>Dark</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
@@ -476,6 +505,22 @@ const styles = StyleSheet.create({
     right: 10,
     top: '50%',
     transform: [{ translateY: -18 }], // Changed from -12 to -18
+  },
+  themeButtonGroup: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  themeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  activeThemeButton: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
   },
 });
 
