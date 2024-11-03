@@ -25,7 +25,7 @@ const ImageMessage = ({
   const revisedPrompt = revisedPromptMatch ? revisedPromptMatch[1] : null;
   
   const handlePressIn = () => {
-    scale.value = withSpring(0.95);
+    scale.value = withSpring(0.98);
   };
 
   const handlePressOut = () => {
