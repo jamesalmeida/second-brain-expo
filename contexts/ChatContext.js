@@ -272,7 +272,7 @@ export const ChatProvider = ({ children }) => {
             const imageUrl = response.data[0].url;
             console.log('Image URL:', imageUrl);
 
-            const aiMessage = `<img src="${imageUrl}" alt="Generated Image" />`;
+            const aiMessage = `<img src="${imageUrl}" alt="Generated Image" data-revised-prompt="${response.data[0].revised_prompt}" />`;
             console.log('AI Message:', aiMessage);
 
             // Add AI response with image to the chat

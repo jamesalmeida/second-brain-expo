@@ -96,9 +96,9 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
     }
   };
 
-  const handleLongPress = async (message) => {
+  const handleLongPress = async (message, index) => {
     const isImage = message.content.startsWith('<img');
-    
+
     if (Platform.OS === 'web') {
       // Web handling
       if (isImage) {
@@ -127,13 +127,22 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
       return;
     }
     
+    const isFlipped = index === flippedMessageIndex;
+    const revisedPromptMatch = message.content.match(/data-revised-prompt="([^"]+)"/);
+    const revisedPrompt = revisedPromptMatch ? revisedPromptMatch[1] : null;
+    
     if (Platform.OS === 'ios') {
       let options = ['Cancel'];
       let actions = [];
       
       if (isImage) {
-        options.unshift('Share', 'Save Image', 'More Info');
-        actions = ['share', 'save', 'moreInfo'];
+        if (isFlipped && revisedPrompt) {
+          options.unshift('Share', 'Copy Text');
+          actions = ['share', 'copy'];
+        } else {
+          options.unshift('Share', 'Save Image', 'More Info');
+          actions = ['share', 'save', 'moreInfo'];
+        }
       } else {
         options.unshift('Share', 'Copy Text');
         actions = ['share', 'copy'];
@@ -146,18 +155,28 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
         },
         async (buttonIndex) => {
           const action = actions[buttonIndex];
-          if (action === 'copy' && !isImage) {
-            await Clipboard.setStringAsync(message.content);
+          if (action === 'copy') {
+            if (isImage && isFlipped && revisedPrompt) {
+              await Clipboard.setStringAsync(revisedPrompt);
+            } else if (!isImage) {
+              await Clipboard.setStringAsync(message.content);
+            }
           } else if (action === 'save' && isImage) {
             await saveImage(message.content);
           } else if (action === 'share') {
             try {
               if (isImage) {
-                const srcMatch = message.content.match(/src="([^"]+)"/);
-                if (srcMatch && srcMatch[1]) {
+                if (isFlipped && revisedPrompt) {
                   await Share.share({
-                    url: srcMatch[1]  // iOS will handle the image URL appropriately
+                    message: revisedPrompt
                   });
+                } else {
+                  const srcMatch = message.content.match(/src="([^"]+)"/);
+                  if (srcMatch && srcMatch[1]) {
+                    await Share.share({
+                      url: srcMatch[1]
+                    });
+                  }
                 }
               } else {
                 await Share.share({
@@ -168,7 +187,6 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
               console.error('Error sharing:', error);
             }
           } else if (action === 'moreInfo' && isImage) {
-            // Find the ImageMessage component and trigger its flip
             const messageIndex = messages.findIndex(m => m === message);
             if (messageIndex >= 0) {
               setFlippedMessageIndex(messageIndex);
@@ -375,9 +393,16 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
                   <ImageMessage
                     key={index}
                     message={message}
-                    handleLongPress={handleLongPress}
+                    handleLongPress={(message, isFlipped) => handleLongPress(message, index, isFlipped)}
                     isFlipped={index === flippedMessageIndex}
                     onFlipEnd={() => setFlippedMessageIndex(null)}
+                    onFlip={(message) => {
+                      const messageIndex = messages.findIndex(m => m === message);
+                      if (messageIndex >= 0) {
+                        setFlippedMessageIndex(messageIndex);
+                      }
+                    }}
+                    messages={messages}
                   />
                 );
               }
@@ -385,7 +410,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
               return (
                 <TouchableOpacity
                   key={index}
-                  onLongPress={() => handleLongPress(message)}
+                  onLongPress={() => handleLongPress(message, index)}
                   activeOpacity={1}
                 >
                   <View 

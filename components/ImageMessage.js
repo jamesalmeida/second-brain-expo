@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import Animated, { 
   useAnimatedStyle, 
@@ -14,11 +14,15 @@ const ImageMessage = ({
   message, 
   handleLongPress, 
   isFlipped,
-  onFlipEnd 
+  onFlipEnd,
+  onFlip,
+  messages
 }) => {
   const scale = useSharedValue(1);
   const flipAnimation = useSharedValue(0);
   const srcMatch = message.content.match(/src="([^"]+)"/);
+  const revisedPromptMatch = message.content.match(/data-revised-prompt="([^"]+)"/);
+  const revisedPrompt = revisedPromptMatch ? revisedPromptMatch[1] : null;
   
   const handlePressIn = () => {
     scale.value = withSpring(0.95);
@@ -44,7 +48,7 @@ const ImageMessage = ({
 
   const handlePress = () => {
     if (!isFlipped) {
-      flipAnimation.value = withTiming(1, { duration: 500 });
+      onFlip(message);
     }
   };
 
@@ -89,7 +93,7 @@ const ImageMessage = ({
   return (
     <TouchableOpacity
       onPress={handlePress}
-      onLongPress={() => handleLongPress(message)}
+      onLongPress={() => handleLongPress(message, isFlipped)}
       onPressIn={() => handlePressIn()}
       onPressOut={() => handlePressOut()}
       delayLongPress={200}
@@ -117,10 +121,18 @@ const ImageMessage = ({
             >
               <Text style={styles.closeButtonText}>×</Text>
             </TouchableOpacity>
-            <Text style={styles.infoTitle}>Image Information</Text>
-            <Text style={styles.infoText}>Model: DALL-E 3</Text>
-            <Text style={styles.infoText}>Size: 1024x1024</Text>
-            <Text style={styles.infoText}>Generated: {new Date().toLocaleDateString()}</Text>
+            {revisedPrompt && (
+              <View style={styles.promptOuterContainer}>
+                <Text style={styles.promptLabel}>DALL-E's Interpretation:</Text>
+                <ScrollView 
+                  style={styles.promptScrollContainer}
+                  contentContainerStyle={styles.promptContentContainer}
+                  showsVerticalScrollIndicator={true}
+                >
+                  <Text style={styles.promptText}>{revisedPrompt}</Text>
+                </ScrollView>
+              </View>
+            )}
           </View>
         </Animated.View>
       </View>
@@ -163,8 +175,7 @@ const styles = StyleSheet.create({
   infoContent: {
     flex: 1,
     padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingTop: 0,
   },
   infoTitle: {
     fontSize: 18,
@@ -204,6 +215,30 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 20,
     fontWeight: 'bold',
+  },
+  promptOuterContainer: {
+    flex: 1,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  promptLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1C1C1E',
+    marginBottom: 8,
+  },
+  promptScrollContainer: {
+    flex: 1,
+    // backgroundColor: 'rgba(0,0,0,0.05)',
+    // borderRadius: 10,
+  },
+  promptContentContainer: {
+    // padding: 15,
+  },
+  promptText: {
+    fontSize: 14,
+    color: '#3A3A3C',
+    lineHeight: 20,
   },
 });
 
