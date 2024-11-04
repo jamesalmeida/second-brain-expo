@@ -27,6 +27,8 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
   const [isGrokApiKeyFrozen, setIsGrokApiKeyFrozen] = useState(false);
   const [hasCalendarPermission, setHasCalendarPermission] = useState(false);
   const [hasReminderPermission, setHasReminderPermission] = useState(false);
+  const [showCalendarSuccess, setShowCalendarSuccess] = useState(false);
+  const [showReminderSuccess, setShowReminderSuccess] = useState(false);
 
   useEffect(() => {
     loadApiKey();
@@ -173,6 +175,8 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
       if (status === 'granted') {
         setHasCalendarPermission(true);
         await AsyncStorage.setItem('calendar_permission', 'granted');
+        setShowCalendarSuccess(true);
+        setTimeout(() => setShowCalendarSuccess(false), 2000);
       }
     } else {
       Alert.alert(
@@ -188,7 +192,11 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
     if (!hasReminderPermission) {
       const { status } = await Calendar.requestRemindersPermissionsAsync();
       console.log('Reminder permission request response:', status);
-      setHasReminderPermission(status === 'granted');
+      if (status === 'granted') {
+        setHasReminderPermission(true);
+        setShowReminderSuccess(true);
+        setTimeout(() => setShowReminderSuccess(false), 2000);
+      }
     } else {
       Alert.alert(
         'Revoke Reminders Access',
@@ -413,9 +421,12 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           <View style={styles.settingItemContent}>
             <Text style={{ color: textColor }}>Calendar Access</Text>
             {hasCalendarPermission && (
-              <Text style={[styles.permissionStatus, { color: textColor }]}>
-                Granted
-              </Text>
+              <Ionicons 
+                name="checkmark-circle" 
+                size={24} 
+                color="green" 
+                style={{ marginLeft: 8 }}
+              />
             )}
           </View>
           <Switch
@@ -428,9 +439,12 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           <View style={styles.settingItemContent}>
             <Text style={{ color: textColor }}>Reminders Access</Text>
             {hasReminderPermission && (
-              <Text style={[styles.permissionStatus, { color: textColor }]}>
-                Granted
-              </Text>
+              <Ionicons 
+                name="checkmark-circle" 
+                size={24} 
+                color="green" 
+                style={{ marginLeft: 8 }}
+              />
             )}
           </View>
           <Switch
@@ -636,6 +650,13 @@ const styles = StyleSheet.create({
     color: '#34C759',
     marginLeft: 8,
   },
+  settingControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  successIcon: {
+    marginRight: 8,
+  }
 });
 
 export default Settings;
