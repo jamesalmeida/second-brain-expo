@@ -13,7 +13,7 @@ import { useSharedValue } from 'react-native-reanimated';
 import ChatBubble from './ChatBubble';
 
 const ChatArea = ({ bottomBarRef, openSettings }) => {
-  const { chats, currentChatId, isGeneratingImage } = useChat();
+  const { chats, currentChatId, isGeneratingImage, isLoading } = useChat();
   const scrollViewRef = useRef();
   const [isAtBottom, setIsAtBottom] = useState(true);
   const logoScale = useRef(new Animated.Value(1)).current;
@@ -423,6 +423,12 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#007AFF" />
                 <Text style={styles.loadingText}>Generating image...</Text>
+              </View>
+            )}
+            {isLoading && !isGeneratingImage && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={styles.loadingText}>Thinking...</Text>
               </View>
             )}
           </>

@@ -26,6 +26,7 @@ export const ChatProvider = ({ children }) => {
   const [grokApiKey, setGrokApiKey] = useState('');
   const [useGrokKey, setUseGrokKey] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [hasCalendarAccess, setHasCalendarAccess] = useState(false);
 
   const changeModel = async (newModel) => {
@@ -350,6 +351,8 @@ export const ChatProvider = ({ children }) => {
   };
 
   const sendMessageToOpenAI = async (userMessage) => {
+    setIsLoading(true);
+
     // Add user message to the chat
     const updatedChatsWithUserMessage = chats.map(chat => 
       chat.id === currentChatId 
@@ -730,6 +733,8 @@ export const ChatProvider = ({ children }) => {
       );
       setChats(updatedChatsWithError);
       await saveChat(updatedChatsWithError.find(chat => chat.id === currentChatId));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -846,6 +851,7 @@ export const ChatProvider = ({ children }) => {
       useGrokKey,
       setUseGrokKey,
       isGeneratingImage,
+      isLoading,
     }}>
       {children}
     </ChatContext.Provider>
