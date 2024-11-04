@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OpenAI } from 'openai';
 import { Platform } from 'react-native';
 import { CalendarService } from '../services/CalendarService';
+import { ReminderService } from '../services/ReminderService';
 
 // TOGGLE FOR WEB DEVELOPMENT ONLY - DISABLE IN PRODUCTION
 // API KEYS ARE NOT SUPPORTED ON WEB IN THIS VERSION
@@ -249,6 +250,32 @@ export const ChatProvider = ({ children }) => {
     }
   ];
 
+  const reminderFunctions = [
+    {
+      name: "checkReminders",
+      description: "Check reminders when user asks about their to-dos, lists, or reminders",
+      parameters: {
+        type: "object",
+        properties: {
+          isReminderQuery: {
+            type: "boolean",
+            description: "Whether the user is asking about their reminders, to-dos, or lists"
+          },
+          timeframe: {
+            type: "string",
+            enum: ["today", "tomorrow", "week", "all"],
+            description: "The timeframe the user is asking about, use 'all' if no specific timeframe"
+          },
+          listType: {
+            type: "string",
+            description: "The specific list or group of reminders (e.g., 'groceries', 'todo', etc.). Leave empty if not specified"
+          }
+        },
+        required: ["isReminderQuery", "timeframe"]
+      }
+    }
+  ];
+
   const handleCalendarQuery = async (message) => {
     const calendarKeywords = ['calendar', 'events', 'schedule', 'appointment', 'meeting'];
     const todayKeywords = ['today', 'today\'s'];
@@ -311,7 +338,7 @@ export const ChatProvider = ({ children }) => {
       const functionResponse = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: userMessage }],
-        functions: [...openAIImageGenerationFunctions, ...calendarFunctions],
+        functions: [...openAIImageGenerationFunctions, ...calendarFunctions, ...reminderFunctions],
         function_call: "auto"
       });
 
@@ -477,6 +504,61 @@ export const ChatProvider = ({ children }) => {
             const updatedChat = updatedChatsWithAIResponse.find(chat => chat.id === currentChatId);
             await saveChat(updatedChat);
           }
+        } else if (functionCall.name === "checkReminders" && functionArgs.isReminderQuery) {
+          console.log('Reminder function called with args:', functionArgs);
+          const reminders = await ReminderService.getReminders(functionArgs.timeframe, functionArgs.listType);
+          console.log('Raw reminder response:', reminders);
+          console.log('Reminder response type:', typeof reminders);
+          if (Array.isArray(reminders)) {
+            console.log('Number of reminders:', reminders.length);
+            console.log('First reminder sample:', reminders[0]);
+          }
+
+          let reminderContext = 'You have access to the following reminder information:\n\n';
+          
+          if (typeof reminders === 'string') {
+            reminderContext += reminders;
+          } else if (Array.isArray(reminders)) {
+            if (reminders.length === 0) {
+              reminderContext += `The user has no reminders set for ${functionArgs.timeframe}.`;
+            } else {
+              reminderContext += `The user has ${reminders.length} reminder(s) for ${functionArgs.timeframe}:\n\n` + 
+                reminders.map((reminder, index) => 
+                  `Reminder ${index + 1}:\n` +
+                  `- Title: ${reminder.title}\n` +
+                  `- Due: ${reminder.dueDate}\n` +
+                  `- Notes: ${reminder.notes}\n` +
+                  `- Status: ${reminder.completed ? 'Completed' : 'Pending'}`
+                ).join('\n\n');
+            }
+          }
+
+          const messagesForModel = [
+            ...messages,
+            {
+              role: 'system',
+              content: reminderContext
+            },
+            {
+              role: 'user',
+              content: userMessage
+            }
+          ];
+
+          const completion = await openai.chat.completions.create({
+            model: modelMap[currentModel] || 'gpt-3.5-turbo',
+            messages: messagesForModel,
+          });
+
+          const aiMessage = completion.choices[0].message.content;
+          console.log('AI Message with reminder context:', aiMessage);
+
+          const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
+            chat.id === currentChatId 
+              ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
+              : chat
+          );
+          setChats(updatedChatsWithAIResponse);
         }
       } else {
         const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
