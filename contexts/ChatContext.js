@@ -247,6 +247,40 @@ export const ChatProvider = ({ children }) => {
         },
         required: ["isCalendarQuery", "timeframe"]
       }
+    },
+    {
+      name: "createCalendarEvent",
+      description: "Create a calendar event when user wants to add something to their calendar",
+      parameters: {
+        type: "object",
+        properties: {
+          shouldCreateEvent: {
+            type: "boolean",
+            description: "Whether the user wants to create a calendar event"
+          },
+          currentDateTime: {
+            type: "string",
+            description: "The current date and time in ISO format - DO NOT MODIFY THIS"
+          },
+          title: {
+            type: "string",
+            description: "The title or name of the event"
+          },
+          startDate: {
+            type: "string",
+            description: "The start date and time of the event in ISO format. Must be based on currentDateTime for relative times like 'tomorrow' or 'next week'"
+          },
+          endDate: {
+            type: "string",
+            description: "The end date and time of the event in ISO format. Should be after startDate by the specified duration"
+          },
+          location: {
+            type: "string",
+            description: "The location of the event (optional)"
+          }
+        },
+        required: ["shouldCreateEvent", "currentDateTime", "title", "startDate", "endDate"]
+      }
     }
   ];
 
@@ -335,9 +369,26 @@ export const ChatProvider = ({ children }) => {
       });
 
       // First, ask the model if this is a calendar or image request
+      const now = new Date();
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const contextMessage = `Current date and time: ${now.toLocaleString('en-US', { 
+        timeZone: userTimezone,
+        dateStyle: 'full',
+        timeStyle: 'long'
+      })} (${userTimezone})`;
+
       const functionResponse = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: userMessage }],
+        model: modelMap[currentModel] || 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: "system",
+            content: contextMessage
+          },
+          { 
+            role: "user", 
+            content: userMessage 
+          }
+        ],
         functions: [...openAIImageGenerationFunctions, ...calendarFunctions, ...reminderFunctions],
         function_call: "auto"
       });
@@ -559,6 +610,62 @@ export const ChatProvider = ({ children }) => {
               : chat
           );
           setChats(updatedChatsWithAIResponse);
+        } else if (functionCall.name === "createCalendarEvent" && functionArgs.shouldCreateEvent) {
+          console.log('Creating calendar event with args:', {
+            ...functionArgs,
+            currentDateTime: now.toISOString(),
+            userTimezone,
+            parsedStartDate: new Date(functionArgs.startDate).toLocaleString(),
+            parsedEndDate: new Date(functionArgs.endDate).toLocaleString()
+          });
+          
+          // Ensure dates are in the correct timezone
+          const startDate = new Date(functionArgs.startDate);
+          const endDate = new Date(functionArgs.endDate);
+          
+          // Validate that the dates make sense
+          const tomorrow = new Date(now);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          
+          if (startDate < now) {
+            console.warn('Start date is in the past, adjusting to tomorrow:', {
+              original: startDate,
+              adjusted: tomorrow
+            });
+            startDate.setDate(tomorrow.getDate());
+            startDate.setMonth(tomorrow.getMonth());
+            startDate.setFullYear(tomorrow.getFullYear());
+            
+            // Adjust end date to maintain duration
+            const duration = endDate - startDate;
+            endDate.setTime(startDate.getTime() + duration);
+          }
+          
+          const eventDetails = {
+            ...functionArgs,
+            startDate,
+            endDate
+          };
+          
+          const result = await CalendarService.createEvent(eventDetails);
+          
+          let responseMessage;
+          if (result.success) {
+            responseMessage = `✅ Event created successfully!\n\n📅 ${functionArgs.title}\n⏰ ${new Date(functionArgs.startDate).toLocaleString()} - ${new Date(functionArgs.endDate).toLocaleString()}\n${functionArgs.location ? `📍 ${functionArgs.location}` : ''}`;
+          } else {
+            responseMessage = `❌ ${result.message}`;
+          }
+
+          const updatedChatsWithResponse = updatedChatsWithUserMessage.map(chat => 
+            chat.id === currentChatId 
+              ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: responseMessage }] }
+              : chat
+          );
+          setChats(updatedChatsWithResponse);
+          
+          const updatedChat = updatedChatsWithResponse.find(chat => chat.id === currentChatId);
+          await saveChat(updatedChat);
+          return;
         }
       } else {
         const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
