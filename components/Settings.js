@@ -9,6 +9,7 @@ import axios from 'axios';
 import Slider from '@react-native-community/slider';
 import { OpenAI } from 'openai';
 import * as Calendar from 'expo-calendar';
+import * as Location from 'expo-location';
 
 const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdrop }) => {
   const { isDarkMode, themePreference, setTheme } = useTheme();
@@ -29,6 +30,8 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
   const [hasReminderPermission, setHasReminderPermission] = useState(false);
   const [showCalendarSuccess, setShowCalendarSuccess] = useState(false);
   const [showReminderSuccess, setShowReminderSuccess] = useState(false);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
+  const [showLocationSuccess, setShowLocationSuccess] = useState(false);
 
   useEffect(() => {
     loadApiKey();
@@ -165,6 +168,10 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
     const reminderStatus = await Calendar.getRemindersPermissionsAsync();
     console.log('Initial reminder permission status:', reminderStatus.status);
     setHasReminderPermission(reminderStatus.status === 'granted');
+    
+    const locationStatus = await Location.getForegroundPermissionsAsync();
+    console.log('Initial location permission status:', locationStatus.status);
+    setHasLocationPermission(locationStatus.status === 'granted');
   };
 
   const toggleCalendarAccess = async () => {
@@ -201,6 +208,25 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
       Alert.alert(
         'Revoke Reminders Access',
         'To revoke reminders access, please go to your device settings.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const toggleLocationAccess = async () => {
+    console.log('Attempting to toggle location access. Current status:', hasLocationPermission);
+    if (!hasLocationPermission) {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      console.log('Location permission request response:', status);
+      if (status === 'granted') {
+        setHasLocationPermission(true);
+        setShowLocationSuccess(true);
+        setTimeout(() => setShowLocationSuccess(false), 2000);
+      }
+    } else {
+      Alert.alert(
+        'Revoke Location Access',
+        'To revoke location access, please go to your device settings.',
         [{ text: 'OK' }]
       );
     }
@@ -450,6 +476,26 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           <Switch
             value={hasReminderPermission}
             onValueChange={toggleReminderAccess}
+          />
+        </View>
+
+        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+          <View style={styles.settingItemContent}>
+            <Text style={{ color: textColor }}>Location Access</Text>
+            {hasLocationPermission && (
+              <Ionicons 
+                name="checkmark-circle" 
+                size={24} 
+                color="green" 
+                style={{ marginLeft: 8 }}
+              />
+            )}
+          </View>
+          <Switch
+            value={hasLocationPermission}
+            onValueChange={toggleLocationAccess}
+            trackColor={{ false: '#767577', true: '#81b0ff' }}
+            thumbColor={hasLocationPermission ? '#f5dd4b' : '#f4f3f4'}
           />
         </View>
 

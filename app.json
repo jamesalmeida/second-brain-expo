@@ -30,6 +30,15 @@
     },
     "android": {
       "package": "com.jamesadev.secondbrain"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Second Brain to use your location for context when needed.",
+          "locationWhenInUsePermission": "Allow Second Brain to use your location for context when needed."
+        }
+      ]
+    ]
   }
 }
