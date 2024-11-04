@@ -33,6 +33,24 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
     checkPermissions();
   }, []);
 
+  useEffect(() => {
+    const loadPermissions = async () => {
+      const calendarPerm = await AsyncStorage.getItem('calendar_permission');
+      if (calendarPerm === 'granted') {
+        const { status } = await Calendar.getCalendarPermissionsAsync();
+        setHasCalendarPermission(status === 'granted');
+      }
+      
+      const reminderPerm = await AsyncStorage.getItem('reminder_permission');
+      if (reminderPerm === 'granted') {
+        const { status } = await Calendar.getRemindersPermissionsAsync();
+        setHasReminderPermission(status === 'granted');
+      }
+    };
+    
+    loadPermissions();
+  }, []);
+
   const loadApiKey = async () => {
     try {
       const storedApiKey = await AsyncStorage.getItem('openai_api_key');
@@ -139,16 +157,23 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
 
   const checkPermissions = async () => {
     const calendarStatus = await Calendar.getCalendarPermissionsAsync();
+    console.log('Initial calendar permission status:', calendarStatus.status);
     setHasCalendarPermission(calendarStatus.status === 'granted');
     
     const reminderStatus = await Calendar.getRemindersPermissionsAsync();
+    console.log('Initial reminder permission status:', reminderStatus.status);
     setHasReminderPermission(reminderStatus.status === 'granted');
   };
 
   const toggleCalendarAccess = async () => {
+    console.log('Attempting to toggle calendar access. Current status:', hasCalendarPermission);
     if (!hasCalendarPermission) {
       const { status } = await Calendar.requestCalendarPermissionsAsync();
-      setHasCalendarPermission(status === 'granted');
+      console.log('Calendar permission request response:', status);
+      if (status === 'granted') {
+        setHasCalendarPermission(true);
+        await AsyncStorage.setItem('calendar_permission', 'granted');
+      }
     } else {
       Alert.alert(
         'Revoke Calendar Access',
@@ -159,8 +184,10 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
   };
 
   const toggleReminderAccess = async () => {
+    console.log('Attempting to toggle reminder access. Current status:', hasReminderPermission);
     if (!hasReminderPermission) {
       const { status } = await Calendar.requestRemindersPermissionsAsync();
+      console.log('Reminder permission request response:', status);
       setHasReminderPermission(status === 'granted');
     } else {
       Alert.alert(

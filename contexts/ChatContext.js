@@ -5,6 +5,7 @@ import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { OpenAI } from 'openai';
 import { Platform } from 'react-native';
+import { CalendarService } from '../services/CalendarService';
 
 // TOGGLE FOR WEB DEVELOPMENT ONLY - DISABLE IN PRODUCTION
 // API KEYS ARE NOT SUPPORTED ON WEB IN THIS VERSION
@@ -24,6 +25,7 @@ export const ChatProvider = ({ children }) => {
   const [grokApiKey, setGrokApiKey] = useState('');
   const [useGrokKey, setUseGrokKey] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [hasCalendarAccess, setHasCalendarAccess] = useState(false);
 
   const changeModel = async (newModel) => {
     console.log('Model changed to:', newModel);
@@ -225,6 +227,67 @@ export const ChatProvider = ({ children }) => {
     }
   ];
 
+  const calendarFunctions = [
+    {
+      name: "checkCalendar",
+      description: "Check calendar events when user asks about their schedule",
+      parameters: {
+        type: "object",
+        properties: {
+          isCalendarQuery: {
+            type: "boolean",
+            description: "Whether the user is asking about their calendar or schedule"
+          },
+          timeframe: {
+            type: "string",
+            enum: ["today", "tomorrow", "week"],
+            description: "The timeframe the user is asking about"
+          }
+        },
+        required: ["isCalendarQuery", "timeframe"]
+      }
+    }
+  ];
+
+  const handleCalendarQuery = async (message) => {
+    const calendarKeywords = ['calendar', 'events', 'schedule', 'appointment', 'meeting'];
+    const todayKeywords = ['today', 'today\'s'];
+    
+    const hasCalendarWord = calendarKeywords.some(keyword => 
+      message.toLowerCase().includes(keyword)
+    );
+    const hasTodayWord = todayKeywords.some(keyword => 
+      message.toLowerCase().includes(keyword)
+    );
+
+    console.log('Calendar query detection:', {
+      message,
+      hasCalendarWord,
+      hasTodayWord,
+      willHandle: hasCalendarWord && hasTodayWord
+    });
+
+    if (hasCalendarWord && hasTodayWord) {
+      console.log('Attempting to fetch calendar events');
+      const events = await CalendarService.getEventsForToday();
+      console.log('Calendar events response:', events);
+      if (typeof events === 'string') {
+        return events;
+      }
+      
+      if (Array.isArray(events)) {
+        let response = "Here are your events for today:\n\n";
+        events.forEach(event => {
+          response += `📅 ${event.title}\n`;
+          response += `⏰ ${event.startTime} - ${event.endTime}\n`;
+          response += `📍 ${event.location}\n\n`;
+        });
+        return response;
+      }
+    }
+    return null;
+  };
+
   const sendMessageToOpenAI = async (userMessage) => {
     // Add user message to the chat
     const updatedChatsWithUserMessage = chats.map(chat => 
@@ -244,94 +307,82 @@ export const ChatProvider = ({ children }) => {
         ...(ALLOW_BROWSER && { dangerouslyAllowBrowser: true })
       });
 
-      // First, ask the model if this is an image generation request
+      // First, ask the model if this is a calendar or image request
       const functionResponse = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [{ role: "user", content: userMessage }],
-        functions: openAIImageGenerationFunctions,
+        functions: [...openAIImageGenerationFunctions, ...calendarFunctions],
         function_call: "auto"
       });
 
       const functionCall = functionResponse.choices[0].message.function_call;
       
-      if (functionCall && functionCall.name === "generateDallEImage") {
+      if (functionCall) {
         const functionArgs = JSON.parse(functionCall.arguments);
         
-        if (functionArgs.shouldGenerateImage) {
-          setIsGeneratingImage(true);
-          try {
-            console.log('Starting image generation...');
-            const response = await openai.images.generate({
-              model: "dall-e-3",
-              prompt: functionArgs.imagePrompt,
-              n: 1,
-              size: "1024x1024",
-            });
-            console.log('Image generation response received:', response);
+        if (functionCall.name === "checkCalendar" && functionArgs.isCalendarQuery) {
+          console.log('Calendar function called with args:', functionArgs);
+          const events = await CalendarService.getEvents(functionArgs.timeframe);
+          console.log('Calendar events response:', events);
 
-            const imageUrl = response.data[0].url;
-            console.log('Image URL:', imageUrl);
-
-            const aiMessage = `<img src="${imageUrl}" alt="Generated Image" data-revised-prompt="${response.data[0].revised_prompt}" />`;
-            console.log('AI Message:', aiMessage);
-
-            // Add AI response with image to the chat
-            const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
-              chat.id === currentChatId 
-                ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
-                : chat
-            );
-            setChats(updatedChatsWithAIResponse);
-            
-            // Save the updated chat
-            const updatedChat = updatedChatsWithAIResponse.find(chat => chat.id === currentChatId);
-            await saveChat(updatedChat);
-            
-          } catch (error) {
-            console.error('Image generation error:', error);
-          } finally {
-            setIsGeneratingImage(false);
-          }
-        } else {
-          const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
-          const isGrok = currentModel.toLowerCase().includes('grok');
+          // Create a more explicit calendar context message
+          let calendarContext = 'You have access to the following calendar information:\n\n';
           
-          const activeApiKey = useBuiltInKey ? OPENAI_API_KEY : (isGrok ? grokApiKey : apiKey);
+          if (typeof events === 'string') {
+            calendarContext += events;
+          } else if (Array.isArray(events)) {
+            if (events.length === 0) {
+              calendarContext += `The user has no events scheduled for ${functionArgs.timeframe}.`;
+            } else {
+              calendarContext += `The user has ${events.length} event(s) scheduled for ${functionArgs.timeframe}:\n\n` + 
+                events.map((event, index) => 
+                  `Event ${index + 1}:\n` +
+                  `- Title: ${event.title}\n` +
+                  `- Date: ${event.date}\n` +
+                  `- Time: ${event.startTime} - ${event.endTime}\n` +
+                  `- Location: ${event.location}`
+                ).join('\n\n');
+            }
+          }
+
+          // Include all previous messages plus the calendar context
+          const messagesForModel = [
+            ...messages, // Include previous conversation history
+            {
+              role: 'system',
+              content: calendarContext
+            },
+            {
+              role: 'user',
+              content: userMessage
+            }
+          ];
           
-          if (!activeApiKey) {
-            throw new Error('No API key available. Please set an API key in the settings.');
-          }
+          console.log('Sending to model:', {
+            modelUsed: modelMap[currentModel] || 'gpt-3.5-turbo',
+            messages: messagesForModel,
+            calendarContext,
+            originalQuery: userMessage
+          });
 
-          let completion;
-          
-          if (isGrok) {
-            completion = await handleGrokRequest(messages, grokApiKey);
-          } else {
-            const openai = new OpenAI({
-              apiKey: activeApiKey,
-              baseURL: "https://api.openai.com/v1",
-              ...(ALLOW_BROWSER && { dangerouslyAllowBrowser: true })
-            });
-
-            completion = await openai.chat.completions.create({
-              model: apiModel,
-              messages: messages,
-            });
-          }
-
-          console.log('API Response:', completion);
-
-          if (!completion || !completion.choices || !completion.choices[0]) {
-            throw new Error('Invalid response from API');
-          }
+          const completion = await openai.chat.completions.create({
+            model: modelMap[currentModel] || 'gpt-3.5-turbo',
+            messages: messagesForModel,
+          });
 
           const aiMessage = completion.choices[0].message.content;
-          console.log('AI Message:', aiMessage);
-
-          // Add AI response to the chat
+          
+          // Store both the calendar context and the AI response? Or just the AI response?
           const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
             chat.id === currentChatId 
-              ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
+              ? { 
+                  ...chat, 
+                  messages: [
+                    ...chat.messages,
+                    // { role: 'system', content: calendarContext }, // Store calendar context
+                    { role: 'assistant', content: aiMessage }
+                  ]
+                }
               : chat
           );
           setChats(updatedChatsWithAIResponse);
@@ -339,6 +390,93 @@ export const ChatProvider = ({ children }) => {
           // Save the updated chat
           const updatedChat = updatedChatsWithAIResponse.find(chat => chat.id === currentChatId);
           await saveChat(updatedChat);
+          return;
+        } else if (functionCall.name === "generateDallEImage") {
+          const functionArgs = JSON.parse(functionCall.arguments);
+          
+          if (functionArgs.shouldGenerateImage) {
+            setIsGeneratingImage(true);
+            try {
+              console.log('Starting image generation...');
+              const response = await openai.images.generate({
+                model: "dall-e-3",
+                prompt: functionArgs.imagePrompt,
+                n: 1,
+                size: "1024x1024",
+              });
+              console.log('Image generation response received:', response);
+
+              const imageUrl = response.data[0].url;
+              console.log('Image URL:', imageUrl);
+
+              const aiMessage = `<img src="${imageUrl}" alt="Generated Image" data-revised-prompt="${response.data[0].revised_prompt}" />`;
+              console.log('AI Message:', aiMessage);
+
+              // Add AI response with image to the chat
+              const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
+                chat.id === currentChatId 
+                  ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
+                  : chat
+              );
+              setChats(updatedChatsWithAIResponse);
+              
+              // Save the updated chat
+              const updatedChat = updatedChatsWithAIResponse.find(chat => chat.id === currentChatId);
+              await saveChat(updatedChat);
+              
+            } catch (error) {
+              console.error('Image generation error:', error);
+            } finally {
+              setIsGeneratingImage(false);
+            }
+          } else {
+            const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
+            const isGrok = currentModel.toLowerCase().includes('grok');
+            
+            const activeApiKey = useBuiltInKey ? OPENAI_API_KEY : (isGrok ? grokApiKey : apiKey);
+            
+            if (!activeApiKey) {
+              throw new Error('No API key available. Please set an API key in the settings.');
+            }
+
+            let completion;
+            
+            if (isGrok) {
+              completion = await handleGrokRequest(messages, grokApiKey);
+            } else {
+              const openai = new OpenAI({
+                apiKey: activeApiKey,
+                baseURL: "https://api.openai.com/v1",
+                ...(ALLOW_BROWSER && { dangerouslyAllowBrowser: true })
+              });
+
+              completion = await openai.chat.completions.create({
+                model: apiModel,
+                messages: messages,
+              });
+            }
+
+            console.log('API Response:', completion);
+
+            if (!completion || !completion.choices || !completion.choices[0]) {
+              throw new Error('Invalid response from API');
+            }
+
+            const aiMessage = completion.choices[0].message.content;
+            console.log('AI Message:', aiMessage);
+
+            // Add AI response to the chat
+            const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
+              chat.id === currentChatId 
+                ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
+                : chat
+            );
+            setChats(updatedChatsWithAIResponse);
+
+            // Save the updated chat
+            const updatedChat = updatedChatsWithAIResponse.find(chat => chat.id === currentChatId);
+            await saveChat(updatedChat);
+          }
         }
       } else {
         const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
