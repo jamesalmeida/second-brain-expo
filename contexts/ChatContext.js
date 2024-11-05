@@ -340,7 +340,7 @@ export const ChatProvider = ({ children }) => {
       if (Array.isArray(events)) {
         let response = "Here are your events for today:\n\n";
         events.forEach(event => {
-          response += `📅 ${event.title}\n`;
+          response += ` ${event.title}\n`;
           response += `⏰ ${event.startTime} - ${event.endTime}\n`;
           response += `📍 ${event.location}\n\n`;
         });
@@ -523,7 +523,16 @@ export const ChatProvider = ({ children }) => {
             let completion;
             
             if (isGrok) {
-              completion = await handleGrokRequest(messages, grokApiKey);
+              const grokOpenAI = new OpenAI({
+                apiKey: grokApiKey,
+                baseURL: "https://api.x.ai/v1",
+                ...(ALLOW_BROWSER && { dangerouslyAllowBrowser: true })
+              });
+
+              completion = await grokOpenAI.chat.completions.create({
+                model: "grok-beta",
+                messages: messages
+              });
             } else {
               const openai = new OpenAI({
                 apiKey: activeApiKey,
@@ -680,14 +689,33 @@ export const ChatProvider = ({ children }) => {
           throw new Error('No API key available. Please set an API key in the settings.');
         }
 
+        console.log('Chat request details:', {
+          currentModel,
+          apiModel,
+          isGrok,
+          modelMap,
+          baseURL: isGrok ? "https://api.x.ai/v1" : "https://api.openai.com/v1"
+        });
+
+        console.log('API Configuration:', {
+          isUsingBuiltInKey: useBuiltInKey,
+          isGrokKeyPresent: !!grokApiKey,
+          isApiKeyPresent: !!apiKey,
+          selectedModel: isGrok ? "grok-beta" : apiModel
+        });
+
         const openai = new OpenAI({
           apiKey: activeApiKey,
           baseURL: isGrok ? "https://api.x.ai/v1" : "https://api.openai.com/v1",
           ...(ALLOW_BROWSER && { dangerouslyAllowBrowser: true })
         });
 
-        console.log('Sending request with model:', isGrok ? "grok-beta" : apiModel);
-        
+        console.log('Sending chat completion request:', {
+          model: isGrok ? "grok-beta" : apiModel,
+          messageCount: messages.length,
+          firstMessageContent: messages[0]?.content
+        });
+
         const completion = await openai.chat.completions.create({
           model: isGrok ? "grok-beta" : apiModel,
           messages: messages,
@@ -716,7 +744,13 @@ export const ChatProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error sending message to OpenAI:', error);
-      console.error('Error details:', error.response?.data || error.message);
+      console.error('Error response:', error.response);
+      console.error('Error configuration:', {
+        currentModel,
+        isGrok: currentModel.toLowerCase().includes('grok'),
+        baseURL: currentModel.toLowerCase().includes('grok') ? "https://api.x.ai/v1" : "https://api.openai.com/v1",
+        modelUsed: currentModel.toLowerCase().includes('grok') ? "grok-beta" : modelMap[currentModel]
+      });
       
       let errorMessage = 'Sorry, I encountered an error. Please try again.';
       if (error.response?.status === 401) {
@@ -740,17 +774,30 @@ export const ChatProvider = ({ children }) => {
 
   const fetchAvailableModels = async () => {
     try {
-      // Add default models including Grok
-      const defaultModels = [
+      console.log('Fetching available models with configuration:', {
+        useBuiltInKey,
+        hasGrokKey: !!grokApiKey,
+        hasApiKey: !!apiKey
+      });
+
+      // Base models without Grok
+      const baseModels = [
         {
           id: 'gpt-3.5-turbo',
           name: 'GPT-3.5'
-        },
+        }
+      ];
+
+      // Only add Grok if we have a valid API key
+      const defaultModels = grokApiKey ? [
+        ...baseModels,
         {
           id: 'grok-beta',
           name: 'Grok'
         }
-      ];
+      ] : baseModels;
+
+      console.log('Default models:', defaultModels);
 
       const activeApiKey = useBuiltInKey ? OPENAI_API_KEY : apiKey;
 
@@ -787,7 +834,7 @@ export const ChatProvider = ({ children }) => {
     } catch (error) {
       console.error('Error fetching available models:', error);
       // Set default models if fetch fails
-      const defaultModels = [
+      const defaultModels = grokApiKey ? [
         {
           id: 'gpt-3.5-turbo',
           name: 'GPT-3.5'
@@ -795,6 +842,11 @@ export const ChatProvider = ({ children }) => {
         {
           id: 'grok-beta',
           name: 'Grok'
+        }
+      ] : [
+        {
+          id: 'gpt-3.5-turbo',
+          name: 'GPT-3.5'
         }
       ];
       setAvailableModels(defaultModels);
@@ -826,7 +878,7 @@ export const ChatProvider = ({ children }) => {
 
   useEffect(() => {
     fetchAvailableModels();
-  }, [apiKey, useBuiltInKey]);
+  }, [apiKey, useBuiltInKey, grokApiKey]);
 
   return (
     <ChatContext.Provider value={{ 
@@ -861,23 +913,15 @@ export const ChatProvider = ({ children }) => {
 export const useChat = () => useContext(ChatContext);
 
 const handleGrokRequest = async (messages, grokApiKey) => {
-  const response = await fetch("https://api.x.ai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${grokApiKey}`,
-      "X-Api-Key": grokApiKey
-    },
-    body: JSON.stringify({
-      model: "grok-beta",
-      messages: messages
-    })
+  const openai = new OpenAI({
+    apiKey: grokApiKey,
+    baseURL: "https://api.x.ai/v1"
   });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error);
-  }
+  const completion = await openai.chat.completions.create({
+    model: "grok-beta",
+    messages: messages
+  });
 
-  return await response.json();
+  return completion;
 };

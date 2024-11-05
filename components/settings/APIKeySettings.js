@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, Switch, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, Switch, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SettingsNestedMenu from './SettingsNestedMenu';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { OpenAI } from 'openai';
 
 const APIKeySettings = ({ 
   isDarkMode,
@@ -15,7 +17,9 @@ const APIKeySettings = ({
   isApiKeyValid,
   isApiKeyFrozen,
   isGrokApiKeyValid,
+  setIsGrokApiKeyValid,
   isGrokApiKeyFrozen,
+  setIsGrokApiKeyFrozen,
   clearApiKey,
   saveApiKey,
   removeApiKey,
@@ -105,12 +109,35 @@ const APIKeySettings = ({
           </View>
           <TouchableOpacity 
             style={[styles.saveButton, isGrokApiKeyValid ? styles.removeButton : null]} 
-            onPress={isGrokApiKeyValid ? () => {
+            onPress={isGrokApiKeyValid ? async () => {
               setGrokApiKey('');
               setIsGrokApiKeyValid(false);
               setIsGrokApiKeyFrozen(false);
-              AsyncStorage.removeItem('grok_api_key');
-            } : saveGrokApiKey}
+              await AsyncStorage.removeItem('grok_api_key');
+              await AsyncStorage.removeItem('use_grok_key');
+            } : async () => {
+              try {
+                const openai = new OpenAI({
+                  apiKey: grokApiKey,
+                  baseURL: "https://api.x.ai/v1"
+                });
+
+                const completion = await openai.chat.completions.create({
+                  model: "grok-beta",
+                  messages: [{ role: "user", content: "Hello" }]
+                });
+
+                if (completion) {
+                  await AsyncStorage.setItem('grok_api_key', grokApiKey);
+                  setIsGrokApiKeyValid(true);
+                  setIsGrokApiKeyFrozen(true);
+                  console.log('Grok API key saved successfully');
+                }
+              } catch (error) {
+                console.error('Error saving Grok API key:', error);
+                Alert.alert('Invalid API Key', 'The provided Grok API key is not valid. Please check and try again.');
+              }
+            }}
           >
             <Text style={styles.saveButtonText}>
               {isGrokApiKeyValid ? 'Remove' : 'Save'}

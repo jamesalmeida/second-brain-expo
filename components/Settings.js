@@ -139,17 +139,26 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
 
   const saveGrokApiKey = async () => {
     try {
-      const openai = new OpenAI({
-        apiKey: grokApiKey,
-        baseURL: "https://api.x.ai/v1",
+      const response = await fetch("https://api.x.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${grokApiKey}`,
+          "X-Api-Key": grokApiKey
+        },
+        body: JSON.stringify({
+          model: "grok-beta",
+          messages: [{ role: "user", content: "Hello" }]
+        })
       });
 
-      const response = await openai.chat.completions.create({
-        model: "grok-beta",
-        messages: [{ role: "user", content: "Hello" }],
-      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      if (response) {
+      const data = await response.json();
+
+      if (data) {
         await AsyncStorage.setItem('grok_api_key', grokApiKey);
         setIsGrokApiKeyValid(true);
         setIsGrokApiKeyFrozen(true);
@@ -470,7 +479,9 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
               isApiKeyValid={isApiKeyValid}
               isApiKeyFrozen={isApiKeyFrozen}
               isGrokApiKeyValid={isGrokApiKeyValid}
+              setIsGrokApiKeyValid={setIsGrokApiKeyValid}
               isGrokApiKeyFrozen={isGrokApiKeyFrozen}
+              setIsGrokApiKeyFrozen={setIsGrokApiKeyFrozen}
               clearApiKey={clearApiKey}
               saveApiKey={saveApiKey}
               removeApiKey={removeApiKey}
