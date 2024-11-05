@@ -76,7 +76,9 @@ export const ChatProvider = ({ children }) => {
         setChats(loadedChats);
         setCurrentChatId(loadedChats[loadedChats.length - 1].id);
       } else {
-        createNewChat();
+        // Just create the ID and model, but don't add to chats yet
+        const { id } = createNewChat();
+        setCurrentChatId(id);
       }
       fetchAvailableModels();
       loadApiKeySettings();
@@ -189,17 +191,16 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  const createNewChat = async () => {
+  const createNewChat = () => {
     const newChat = {
       id: Date.now().toString(),
       title: new Date().toLocaleString(),
       messages: [],
       model: defaultModel
     };
-    await saveChat(newChat);
-    setChats(prevChats => [...prevChats, newChat]);
     setCurrentChatId(newChat.id);
     setCurrentModel(defaultModel);
+    return newChat;
   };
 
   const addMessage = async (role, content) => {
@@ -358,17 +359,34 @@ export const ChatProvider = ({ children }) => {
   const sendMessageToOpenAI = async (userMessage) => {
     setIsLoading(true);
 
-    // Add user message to the chat
-    const updatedChatsWithUserMessage = chats.map(chat => 
-      chat.id === currentChatId 
-        ? { ...chat, messages: [...chat.messages, { role: 'user', content: userMessage }] }
-        : chat
-    );
-    setChats(updatedChatsWithUserMessage);
-  
-    console.log('User prompt:', userMessage);
-  
     try {
+      // Check if this chat exists in state
+      const chatExists = chats.some(chat => chat.id === currentChatId);
+      let updatedChatsWithUserMessage;
+
+      if (!chatExists) {
+        // This is a new chat, create it with the first message
+        const newChat = {
+          id: currentChatId,
+          title: new Date().toLocaleString(),
+          messages: [{ role: 'user', content: userMessage }],
+          model: currentModel
+        };
+        updatedChatsWithUserMessage = [...chats, newChat];
+        setChats(updatedChatsWithUserMessage);
+        await saveChat(newChat);
+      } else {
+        // Existing chat, just add the message
+        updatedChatsWithUserMessage = chats.map(chat => 
+          chat.id === currentChatId 
+            ? { ...chat, messages: [...chat.messages, { role: 'user', content: userMessage }] }
+            : chat
+        );
+        setChats(updatedChatsWithUserMessage);
+      }
+
+      console.log('User prompt:', userMessage);
+    
       const currentChat = updatedChatsWithUserMessage.find(chat => chat.id === currentChatId);
       const messages = currentChat ? currentChat.messages : [];
       
