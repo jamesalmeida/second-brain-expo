@@ -906,7 +906,8 @@ export const ChatProvider = ({ children }) => {
     setChats(updatedChats);
     
     if (chatId === currentChatId) {
-      setCurrentChatId(updatedChats.length > 0 ? updatedChats[0].id : null);
+      // Just clear the current chat ID
+      setCurrentChatId(null);
     }
   };
 
