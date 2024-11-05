@@ -55,8 +55,9 @@ const AIModelsSettings = ({
                 value={!hiddenModels.includes(model.name)}
                 onValueChange={() => toggleModelVisibility(model.name)}
                 disabled={defaultModel === model.name}
-                trackColor={{ false: '#767577', true: '#81b0ff' }}
-                thumbColor={hiddenModels.includes(model.name) ? '#f4f3f4' : '#f5dd4b'}
+                trackColor={{ false: '#e9e9ea', true: '#34c759' }}
+                thumbColor={'#ffffff'}
+                ios_backgroundColor="#e9e9ea"
               />
             </View>
           </TouchableOpacity>
