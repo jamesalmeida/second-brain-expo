@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, StyleSheet, ScrollView, Alert, Keyboard } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, StyleSheet, FlatList, Alert, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -44,29 +44,35 @@ const HamburgerMenu = ({ openSettings, navigation }) => {
     );
   };
 
+  const renderItem = ({ item }) => (
+    <View style={[styles.chatItemContainer, { borderBottomColor: borderColor }]}>
+      <TouchableOpacity
+        style={[
+          styles.chatItem,
+          item.id === currentChatId && styles.activeChatItem
+        ]}
+        onPress={() => handleChatSelect(item.id)}
+      >
+        <Text style={[styles.chatTitle, { color: textColor }]}>{item.title}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleDeleteChat(item.id)}
+      >
+        <Ionicons name="trash-outline" size={24} color={textColor} />
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <ScrollView style={styles.content}>
-        {chats.map((chat) => (
-          <View key={chat.id} style={[styles.chatItemContainer, { borderBottomColor: borderColor }]}>
-            <TouchableOpacity
-              style={[
-                styles.chatItem,
-                chat.id === currentChatId && styles.activeChatItem
-              ]}
-              onPress={() => handleChatSelect(chat.id)}
-            >
-              <Text style={[styles.chatTitle, { color: textColor }]}>{chat.title}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => handleDeleteChat(chat.id)}
-            >
-              <Ionicons name="trash-outline" size={24} color={textColor} />
-            </TouchableOpacity>
-          </View>
-        ))}
-      </ScrollView>
+      <FlatList
+        data={chats}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        style={styles.content}
+        contentContainerStyle={styles.listContent}
+      />
       <TouchableOpacity
         style={[styles.settingsButton, { borderTopColor: borderColor }]}
         onPress={openSettings}
@@ -84,7 +90,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  listContent: {
     paddingTop: 20,
+    paddingBottom: 20,
   },
   chatItemContainer: {
     flexDirection: 'row',
