@@ -403,10 +403,8 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
               }).start();
             }}
           >
-            <View style={styles.settingItemContent}>
-              <Text style={{ color: textColor }}>API Keys</Text>
-              <Ionicons name="chevron-forward" size={24} color={textColor} />
-            </View>
+            <Text style={{ color: textColor }}>API Keys</Text>
+            <Ionicons name="chevron-forward" size={24} color={textColor} />
           </TouchableOpacity>
 
           {/* Calendar Settings Button */}
@@ -414,10 +412,8 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             style={[styles.settingItem, { borderBottomColor: borderColor }]}
             onPress={slideToCalendarSettings}
           >
-            <View style={styles.settingItemContent}>
-              <Text style={{ color: textColor }}>Calendar & Reminders Settings</Text>
-              <Ionicons name="chevron-forward" size={24} color={textColor} />
-            </View>
+            <Text style={{ color: textColor }}>Calendar & Reminders Settings</Text>
+            <Ionicons name="chevron-forward" size={24} color={textColor} />
           </TouchableOpacity>
 
           {/* AI Models */}
