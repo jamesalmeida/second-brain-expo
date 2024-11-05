@@ -10,8 +10,9 @@ import Slider from '@react-native-community/slider';
 import { OpenAI } from 'openai';
 import * as Calendar from 'expo-calendar';
 import * as Location from 'expo-location';
-import CalendarSettings from './CalendarSettings';
-import APISettings from './APIKeySettings';
+import APISettings from './settings/APIKeySettings';
+import CalendarSettings from './settings/CalendarSettings';
+import SettingsNestedMenu from './settings/SettingsNestedMenu';
 
 const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdrop }) => {
   const { isDarkMode, themePreference, setTheme } = useTheme();
