@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Switch, TextInput, Modal, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Switch, TextInput, Modal, Alert, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { useTheme } from '../contexts/ThemeContext';
@@ -10,6 +10,7 @@ import Slider from '@react-native-community/slider';
 import { OpenAI } from 'openai';
 import * as Calendar from 'expo-calendar';
 import * as Location from 'expo-location';
+import CalendarSettings from './CalendarSettings';
 
 const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdrop }) => {
   const { isDarkMode, themePreference, setTheme } = useTheme();
@@ -32,6 +33,8 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
   const [showReminderSuccess, setShowReminderSuccess] = useState(false);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [showLocationSuccess, setShowLocationSuccess] = useState(false);
+  const [currentMenu, setCurrentMenu] = useState('main');
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     loadApiKey();
@@ -259,6 +262,23 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
     setIsApiKeyFrozen(false);
   };
 
+  const slideToCalendarSettings = () => {
+    setCurrentMenu('calendar');
+    Animated.timing(slideAnim, {
+      toValue: -1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const slideBackToMain = () => {
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => setCurrentMenu('main'));
+  };
+
   return (
     <BottomSheet
       ref={bottomSheetRef}
@@ -277,8 +297,32 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
         >
           <Ionicons name="close-circle-outline" size={30} color={textColor} />
         </TouchableOpacity>
-        <Text style={[styles.settingsTitle, { color: textColor }]}>🧠 Settings</Text>
 
+        <Animated.View
+          style={[
+            styles.menuContainer,
+            {
+              transform: [
+                {
+                  translateX: slideAnim.interpolate({
+                    inputRange: [-1, 0],
+                    outputRange: [-400, 0]
+                  })
+                }
+              ]
+            }
+          ]}
+        >
+          <Text style={[styles.settingsTitle, { color: textColor }]}>🧠 Settings</Text>
+
+          <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => bottomSheetRef.current?.close()}
+        >
+          <Ionicons name="close-circle-outline" size={30} color={textColor} />
+        </TouchableOpacity>
+
+        {/* CHANGE APP THEME */}
         <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <Text style={{ color: textColor }}>Theme</Text>
           <View style={styles.themeButtonGroup}>
@@ -318,7 +362,7 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           </View>
         </View>
 
-        {/* OPENAI API KEY */}
+        {/* ADD YOUR OWN OPENAI API KEY */}
         <View style={[styles.settingItem, { borderBottomColor: borderColor, opacity: useBuiltInKey ? 0.5 : 1, flexDirection: 'column', alignItems: 'flex-start' }]}>
           <View style={styles.labelContainer}>
             <Text style={{ color: textColor }}>Use Your Own OpenAI API Key:</Text>
@@ -362,7 +406,7 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           </TouchableOpacity>
         </View>
 
-        {/* GROK API KEY */}
+        {/* ADD YOUR OWN GROK API KEY */}
         <View style={[styles.settingItem, { borderBottomColor: borderColor, opacity: useBuiltInKey ? 0.5 : 1, flexDirection: 'column', alignItems: 'flex-start' }]}>
           <View style={styles.labelContainer}>
             <Text style={{ color: textColor }}>Grok API Key:</Text>
@@ -410,6 +454,7 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           </TouchableOpacity>
         </View>
 
+        {/* FUTURE OPTION TO SUBSCRIBE TO USE BUILT-IN API KEY */}
         <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <Text style={{ color: textColor }}>Use Built-in API Key:</Text>
           <Switch
@@ -417,6 +462,17 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             onValueChange={toggleBuiltInKey}
           />
         </View>
+
+         {/* Calendar Settings Button */}
+         <TouchableOpacity 
+            style={[styles.settingItem, { borderBottomColor: borderColor }]}
+            onPress={slideToCalendarSettings}
+          >
+            <View style={styles.settingItemContent}>
+              <Text style={{ color: textColor }}>Calendar & Reminders Settings</Text>
+              <Ionicons name="chevron-forward" size={24} color={textColor} />
+            </View>
+          </TouchableOpacity>
 
         {/* <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <Text style={{ color: textColor }}>AI Voice On/Off</Text>
@@ -443,42 +499,7 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           />
         </View> */}
 
-        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <View style={styles.settingItemContent}>
-            <Text style={{ color: textColor }}>Calendar Access</Text>
-            {hasCalendarPermission && (
-              <Ionicons 
-                name="checkmark-circle" 
-                size={24} 
-                color="green" 
-                style={{ marginLeft: 8 }}
-              />
-            )}
-          </View>
-          <Switch
-            value={hasCalendarPermission}
-            onValueChange={toggleCalendarAccess}
-          />
-        </View>
-
-        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <View style={styles.settingItemContent}>
-            <Text style={{ color: textColor }}>Reminders Access</Text>
-            {hasReminderPermission && (
-              <Ionicons 
-                name="checkmark-circle" 
-                size={24} 
-                color="green" 
-                style={{ marginLeft: 8 }}
-              />
-            )}
-          </View>
-          <Switch
-            value={hasReminderPermission}
-            onValueChange={toggleReminderAccess}
-          />
-        </View>
-
+        {/* LOCATION ACCESS */}
         <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <View style={styles.settingItemContent}>
             <Text style={{ color: textColor }}>Location Access</Text>
@@ -499,7 +520,35 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           />
         </View>
 
-        {/* TODO: Add more settings options */}
+        </Animated.View>
+
+        <Animated.View
+          style={[
+            styles.menuContainer,
+            styles.overlayMenu,
+            {
+              transform: [
+                {
+                  translateX: slideAnim.interpolate({
+                    inputRange: [-1, 0],
+                    outputRange: [0, 400]
+                  })
+                }
+              ]
+            }
+          ]}
+        >
+          <CalendarSettings
+            isDarkMode={isDarkMode}
+            hasCalendarPermission={hasCalendarPermission}
+            hasReminderPermission={hasReminderPermission}
+            toggleCalendarAccess={toggleCalendarAccess}
+            toggleReminderAccess={toggleReminderAccess}
+            onBack={slideBackToMain}
+            textColor={textColor}
+            borderColor={borderColor}
+          />
+        </Animated.View>
       </BottomSheetView>
       <Modal
         animationType="fade"
@@ -702,7 +751,17 @@ const styles = StyleSheet.create({
   },
   successIcon: {
     marginRight: 8,
-  }
+  },
+  menuContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'inherit',
+    left: 0,
+  },
+  overlayMenu: {
+    left: 0,
+  },
 });
 
 export default Settings;
