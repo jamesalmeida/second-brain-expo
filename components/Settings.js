@@ -13,6 +13,7 @@ import * as Location from 'expo-location';
 import APISettings from './settings/APIKeySettings';
 import CalendarSettings from './settings/CalendarSettings';
 import SettingsNestedMenu from './settings/SettingsNestedMenu';
+import AIModelsSettings from './settings/AIModelsSettings';
 
 const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdrop }) => {
   const { isDarkMode, themePreference, setTheme } = useTheme();
@@ -290,6 +291,14 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
     }).start(() => setCurrentMenu('main'));
   };
 
+  const handleMenuTransition = (menuName) => {
+    Animated.timing(slideAnim, {
+      toValue: -1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => setCurrentMenu(menuName));
+  };
+
   return (
     <BottomSheet
       ref={bottomSheetRef}
@@ -402,30 +411,14 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             </View>
           </TouchableOpacity>
 
-          {/* <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-            <Text style={{ color: textColor }}>AI Voice On/Off</Text>
-            <Switch
-              value={false} // Placeholder value
-              onValueChange={() => {}} // Placeholder function
-            />
-          </View> */}
-
-          {/* <TouchableOpacity style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-            <Text style={{ color: textColor }}>Choose AI Voice</Text>
-          </TouchableOpacity> */}
-
-          {/* <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-            <Text style={{ color: textColor }}>AI Voice Speed</Text>
-            <Slider
-              style={{width: 200, height: 40}}
-              minimumValue={0}
-              maximumValue={1}
-              value={0.5} // Placeholder value
-              onValueChange={() => {}} // Placeholder function
-              minimumTrackTintColor="#FFFFFF"
-              maximumTrackTintColor="#000000"
-            />
-          </View> */}
+          {/* AI Models */}
+          <TouchableOpacity
+            style={[styles.settingItem, { borderBottomColor: borderColor }]}
+            onPress={() => handleMenuTransition('aimodels')}
+          >
+            <Text style={{ color: textColor }}>AI Models</Text>
+            <Ionicons name="chevron-forward" size={24} color={textColor} />
+          </TouchableOpacity>
 
           {/* LOCATION ACCESS */}
           <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
@@ -501,6 +494,24 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
               textColor={textColor}
               borderColor={borderColor}
             />
+          )}
+          {currentMenu === 'aimodels' && (
+            <Animated.View
+              style={[
+                styles.menuContainer,
+                styles.overlayMenu,
+                { transform: [{ translateX: slideAnim }] }
+              ]}
+            >
+              <AIModelsSettings
+                isDarkMode={isDarkMode}
+                textColor={textColor}
+                borderColor={borderColor}
+                onBack={() => {
+                  slideBackToMain();
+                }}
+              />
+            </Animated.View>
           )}
         </Animated.View>
       </BottomSheetView>
