@@ -11,6 +11,7 @@ import { OpenAI } from 'openai';
 import * as Calendar from 'expo-calendar';
 import * as Location from 'expo-location';
 import CalendarSettings from './CalendarSettings';
+import APISettings from './APIKeySettings';
 
 const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdrop }) => {
   const { isDarkMode, themePreference, setTheme } = useTheme();
@@ -322,149 +323,66 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
           <Ionicons name="close-circle-outline" size={30} color={textColor} />
         </TouchableOpacity>
 
-        {/* CHANGE APP THEME */}
-        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <Text style={{ color: textColor }}>Theme</Text>
-          <View style={styles.themeButtonGroup}>
-            <TouchableOpacity 
-              style={[
-                styles.themeButton, 
-                themePreference === 'light' && styles.activeThemeButton,
-                { borderColor }
-              ]}
-              onPress={() => setTheme('light')}
-            >
-              <Ionicons name="sunny" size={20} color={textColor} />
-              <Text style={{ color: textColor, marginLeft: 5 }}>Light</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[
-                styles.themeButton, 
-                themePreference === 'system' && styles.activeThemeButton,
-                { borderColor }
-              ]}
-              onPress={() => setTheme('system')}
-            >
-              <Ionicons name="phone-portrait" size={20} color={textColor} />
-              <Text style={{ color: textColor, marginLeft: 5 }}>System</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[
-                styles.themeButton, 
-                themePreference === 'dark' && styles.activeThemeButton,
-                { borderColor }
-              ]}
-              onPress={() => setTheme('dark')}
-            >
-              <Ionicons name="moon" size={20} color={textColor} />
-              <Text style={{ color: textColor, marginLeft: 5 }}>Dark</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* ADD YOUR OWN OPENAI API KEY */}
-        <View style={[styles.settingItem, { borderBottomColor: borderColor, opacity: useBuiltInKey ? 0.5 : 1, flexDirection: 'column', alignItems: 'flex-start' }]}>
-          <View style={styles.labelContainer}>
-            <Text style={{ color: textColor }}>Use Your Own OpenAI API Key:</Text>
-          </View>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={[
-                styles.input, 
-                { color: textColor, borderColor },
-                isApiKeyFrozen && styles.frozenInput
-              ]}
-              value={apiKey}
-              onChangeText={setApiKey}
-              placeholder="Enter your OpenAI API key"
-              placeholderTextColor={isDarkMode ? '#999' : '#666'}
-              secureTextEntry
-              editable={!useBuiltInKey && !isApiKeyFrozen}
-            />
-            {apiKey.length > 0 && (
+          {/* CHANGE APP THEME */}
+          <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+            <Text style={{ color: textColor }}>Theme</Text>
+            <View style={styles.themeButtonGroup}>
               <TouchableOpacity 
-                style={styles.iconButton} 
-                onPress={isApiKeyFrozen ? null : clearApiKey}
-                disabled={isApiKeyFrozen}
+                style={[
+                  styles.themeButton, 
+                  themePreference === 'light' && styles.activeThemeButton,
+                  { borderColor }
+                ]}
+                onPress={() => setTheme('light')}
               >
-                <Ionicons 
-                  name={isApiKeyFrozen ? "checkmark-circle" : "close-circle"} 
-                  size={24} 
-                  color={isApiKeyFrozen ? "green" : textColor} 
-                />
+                <Ionicons name="sunny" size={20} color={textColor} />
+                <Text style={{ color: textColor, marginLeft: 5 }}>Light</Text>
               </TouchableOpacity>
-            )}
-          </View>
-          <TouchableOpacity 
-            style={[styles.saveButton, isApiKeyValid ? styles.removeButton : null]} 
-            onPress={isApiKeyValid ? removeApiKey : saveApiKey} 
-            disabled={useBuiltInKey}
-          >
-            <Text style={[styles.saveButtonText, useBuiltInKey && { opacity: 0.5 }]}>
-              {isApiKeyValid ? 'Remove' : 'Save'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ADD YOUR OWN GROK API KEY */}
-        <View style={[styles.settingItem, { borderBottomColor: borderColor, opacity: useBuiltInKey ? 0.5 : 1, flexDirection: 'column', alignItems: 'flex-start' }]}>
-          <View style={styles.labelContainer}>
-            <Text style={{ color: textColor }}>Grok API Key:</Text>
-          </View>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={[
-                styles.input, 
-                { color: textColor, borderColor },
-                isGrokApiKeyFrozen && styles.frozenInput
-              ]}
-              value={grokApiKey}
-              onChangeText={setGrokApiKey}
-              placeholder="Enter your Grok API key"
-              placeholderTextColor={isDarkMode ? '#999' : '#666'}
-              secureTextEntry
-              editable={!isGrokApiKeyFrozen}
-            />
-            {grokApiKey.length > 0 && (
               <TouchableOpacity 
-                style={styles.iconButton} 
-                onPress={isGrokApiKeyFrozen ? null : () => setGrokApiKey('')}
-                disabled={isGrokApiKeyFrozen}
+                style={[
+                  styles.themeButton, 
+                  themePreference === 'system' && styles.activeThemeButton,
+                  { borderColor }
+                ]}
+                onPress={() => setTheme('system')}
               >
-                <Ionicons 
-                  name={isGrokApiKeyFrozen ? "checkmark-circle" : "close-circle"} 
-                  size={24} 
-                  color={isGrokApiKeyFrozen ? "green" : textColor} 
-                />
+                <Ionicons name="phone-portrait" size={20} color={textColor} />
+                <Text style={{ color: textColor, marginLeft: 5 }}>System</Text>
               </TouchableOpacity>
-            )}
+              <TouchableOpacity 
+                style={[
+                  styles.themeButton, 
+                  themePreference === 'dark' && styles.activeThemeButton,
+                  { borderColor }
+                ]}
+                onPress={() => setTheme('dark')}
+              >
+                <Ionicons name="moon" size={20} color={textColor} />
+                <Text style={{ color: textColor, marginLeft: 5 }}>Dark</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+
+          {/* API Key Settings Button */}
           <TouchableOpacity 
-            style={[styles.saveButton, isGrokApiKeyValid ? styles.removeButton : null]} 
-            onPress={isGrokApiKeyValid ? () => {
-              setGrokApiKey('');
-              setIsGrokApiKeyValid(false);
-              setIsGrokApiKeyFrozen(false);
-              AsyncStorage.removeItem('grok_api_key');
-            } : saveGrokApiKey}
+            style={[styles.settingItem, { borderBottomColor: borderColor }]}
+            onPress={() => {
+              setCurrentMenu('api');
+              Animated.timing(slideAnim, {
+                toValue: -1,
+                duration: 300,
+                useNativeDriver: true,
+              }).start();
+            }}
           >
-            <Text style={styles.saveButtonText}>
-              {isGrokApiKeyValid ? 'Remove' : 'Save'}
-            </Text>
+            <View style={styles.settingItemContent}>
+              <Text style={{ color: textColor }}>API Keys</Text>
+              <Ionicons name="chevron-forward" size={24} color={textColor} />
+            </View>
           </TouchableOpacity>
-        </View>
 
-        {/* FUTURE OPTION TO SUBSCRIBE TO USE BUILT-IN API KEY */}
-        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <Text style={{ color: textColor }}>Use Built-in API Key:</Text>
-          <Switch
-            value={useBuiltInKey}
-            onValueChange={toggleBuiltInKey}
-          />
-        </View>
-
-         {/* Calendar Settings Button */}
-         <TouchableOpacity 
+          {/* Calendar Settings Button */}
+          <TouchableOpacity 
             style={[styles.settingItem, { borderBottomColor: borderColor }]}
             onPress={slideToCalendarSettings}
           >
@@ -474,51 +392,51 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             </View>
           </TouchableOpacity>
 
-        {/* <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <Text style={{ color: textColor }}>AI Voice On/Off</Text>
-          <Switch
-            value={false} // Placeholder value
-            onValueChange={() => {}} // Placeholder function
-          />
-        </View> */}
+          {/* <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+            <Text style={{ color: textColor }}>AI Voice On/Off</Text>
+            <Switch
+              value={false} // Placeholder value
+              onValueChange={() => {}} // Placeholder function
+            />
+          </View> */}
 
-        {/* <TouchableOpacity style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <Text style={{ color: textColor }}>Choose AI Voice</Text>
-        </TouchableOpacity> */}
+          {/* <TouchableOpacity style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+            <Text style={{ color: textColor }}>Choose AI Voice</Text>
+          </TouchableOpacity> */}
 
-        {/* <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <Text style={{ color: textColor }}>AI Voice Speed</Text>
-          <Slider
-            style={{width: 200, height: 40}}
-            minimumValue={0}
-            maximumValue={1}
-            value={0.5} // Placeholder value
-            onValueChange={() => {}} // Placeholder function
-            minimumTrackTintColor="#FFFFFF"
-            maximumTrackTintColor="#000000"
-          />
-        </View> */}
+          {/* <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+            <Text style={{ color: textColor }}>AI Voice Speed</Text>
+            <Slider
+              style={{width: 200, height: 40}}
+              minimumValue={0}
+              maximumValue={1}
+              value={0.5} // Placeholder value
+              onValueChange={() => {}} // Placeholder function
+              minimumTrackTintColor="#FFFFFF"
+              maximumTrackTintColor="#000000"
+            />
+          </View> */}
 
-        {/* LOCATION ACCESS */}
-        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <View style={styles.settingItemContent}>
-            <Text style={{ color: textColor }}>Location Access</Text>
-            {hasLocationPermission && (
-              <Ionicons 
-                name="checkmark-circle" 
-                size={24} 
-                color="green" 
-                style={{ marginLeft: 8 }}
-              />
-            )}
+          {/* LOCATION ACCESS */}
+          <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+            <View style={styles.settingItemContent}>
+              <Text style={{ color: textColor }}>Location Access</Text>
+              {hasLocationPermission && (
+                <Ionicons 
+                  name="checkmark-circle" 
+                  size={24} 
+                  color="green" 
+                  style={{ marginLeft: 8 }}
+                />
+              )}
+            </View>
+            <Switch
+              value={hasLocationPermission}
+              onValueChange={toggleLocationAccess}
+              trackColor={{ false: '#767577', true: '#81b0ff' }}
+              thumbColor={hasLocationPermission ? '#f5dd4b' : '#f4f3f4'}
+            />
           </View>
-          <Switch
-            value={hasLocationPermission}
-            onValueChange={toggleLocationAccess}
-            trackColor={{ false: '#767577', true: '#81b0ff' }}
-            thumbColor={hasLocationPermission ? '#f5dd4b' : '#f4f3f4'}
-          />
-        </View>
 
         </Animated.View>
 
@@ -538,16 +456,40 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             }
           ]}
         >
-          <CalendarSettings
-            isDarkMode={isDarkMode}
-            hasCalendarPermission={hasCalendarPermission}
-            hasReminderPermission={hasReminderPermission}
-            toggleCalendarAccess={toggleCalendarAccess}
-            toggleReminderAccess={toggleReminderAccess}
-            onBack={slideBackToMain}
-            textColor={textColor}
-            borderColor={borderColor}
-          />
+          {currentMenu === 'api' && (
+            <APISettings
+              isDarkMode={isDarkMode}
+              textColor={textColor}
+              borderColor={borderColor}
+              apiKey={apiKey}
+              setApiKey={setApiKey}
+              grokApiKey={grokApiKey}
+              setGrokApiKey={setGrokApiKey}
+              useBuiltInKey={useBuiltInKey}
+              isApiKeyValid={isApiKeyValid}
+              isApiKeyFrozen={isApiKeyFrozen}
+              isGrokApiKeyValid={isGrokApiKeyValid}
+              isGrokApiKeyFrozen={isGrokApiKeyFrozen}
+              clearApiKey={clearApiKey}
+              saveApiKey={saveApiKey}
+              removeApiKey={removeApiKey}
+              saveGrokApiKey={saveGrokApiKey}
+              toggleBuiltInKey={toggleBuiltInKey}
+              onBack={slideBackToMain}
+            />
+          )}
+          {currentMenu === 'calendar' && (
+            <CalendarSettings
+              isDarkMode={isDarkMode}
+              hasCalendarPermission={hasCalendarPermission}
+              hasReminderPermission={hasReminderPermission}
+              toggleCalendarAccess={toggleCalendarAccess}
+              toggleReminderAccess={toggleReminderAccess}
+              onBack={slideBackToMain}
+              textColor={textColor}
+              borderColor={borderColor}
+            />
+          )}
         </Animated.View>
       </BottomSheetView>
       <Modal
