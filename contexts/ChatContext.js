@@ -28,6 +28,7 @@ export const ChatProvider = ({ children }) => {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasCalendarAccess, setHasCalendarAccess] = useState(false);
+  const [defaultModel, setDefaultModel] = useState('GPT-3.5');
 
   const changeModel = async (newModel) => {
     console.log('Model changed to:', newModel);
@@ -78,6 +79,7 @@ export const ChatProvider = ({ children }) => {
       }
       fetchAvailableModels();
       loadApiKeySettings();
+      loadDefaultModel();
     };
     initializeChats();
   }, []);
@@ -190,11 +192,13 @@ export const ChatProvider = ({ children }) => {
     const newChat = {
       id: Date.now().toString(),
       title: new Date().toLocaleString(),
-      messages: []
+      messages: [],
+      model: defaultModel
     };
     await saveChat(newChat);
     setChats(prevChats => [...prevChats, newChat]);
     setCurrentChatId(newChat.id);
+    setCurrentModel(defaultModel);
   };
 
   const addMessage = async (role, content) => {
@@ -361,6 +365,8 @@ export const ChatProvider = ({ children }) => {
     );
     setChats(updatedChatsWithUserMessage);
   
+    console.log('User prompt:', userMessage);
+  
     try {
       const currentChat = updatedChatsWithUserMessage.find(chat => chat.id === currentChatId);
       const messages = currentChat ? currentChat.messages : [];
@@ -370,6 +376,16 @@ export const ChatProvider = ({ children }) => {
         baseURL: "https://api.openai.com/v1",
         ...(ALLOW_BROWSER && { dangerouslyAllowBrowser: true })
       });
+
+      // Add the fallback logic here
+      let modelToUse = modelMap[currentModel] || 'gpt-3.5-turbo';
+      
+      // If the current model isn't available, fall back to GPT-3.5
+      if (!availableModels.some(m => m.name === currentModel)) {
+        console.log('Current model unavailable, falling back to GPT-3.5');
+        modelToUse = 'gpt-3.5-turbo';
+        setCurrentModel('GPT-3.5');
+      }
 
       // First, ask the model if this is a calendar or image request
       const now = new Date();
@@ -381,7 +397,7 @@ export const ChatProvider = ({ children }) => {
       })} (${userTimezone})`;
 
       const functionResponse = await openai.chat.completions.create({
-        model: modelMap[currentModel] || 'gpt-3.5-turbo',
+        model: modelToUse,
         messages: [
           {
             role: "system",
@@ -878,7 +894,31 @@ export const ChatProvider = ({ children }) => {
 
   useEffect(() => {
     fetchAvailableModels();
-  }, [apiKey, useBuiltInKey, grokApiKey]);
+  }, [apiKey, useBuiltInKey]);
+
+  const loadDefaultModel = async () => {
+    try {
+      const savedDefaultModel = await AsyncStorage.getItem('default_model');
+      if (savedDefaultModel) {
+        setDefaultModel(savedDefaultModel);
+        setCurrentModel(savedDefaultModel);
+      }
+    } catch (error) {
+      console.error('Error loading default model:', error);
+      setDefaultModel('GPT-3.5');
+      setCurrentModel('GPT-3.5');
+    }
+  };
+
+  const saveDefaultModel = async (model) => {
+    try {
+      await AsyncStorage.setItem('default_model', model);
+      setDefaultModel(model);
+      setCurrentModel(model);
+    } catch (error) {
+      console.error('Error saving default model:', error);
+    }
+  };
 
   return (
     <ChatContext.Provider value={{ 
@@ -904,6 +944,8 @@ export const ChatProvider = ({ children }) => {
       setUseGrokKey,
       isGeneratingImage,
       isLoading,
+      defaultModel,
+      saveDefaultModel,
     }}>
       {children}
     </ChatContext.Provider>

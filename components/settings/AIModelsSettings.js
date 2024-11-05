@@ -12,8 +12,8 @@ const AIModelsSettings = ({
 }) => {
   const { 
     availableModels,
-    currentModel,
-    setCurrentModel
+    defaultModel,
+    saveDefaultModel
   } = useChat();
 
   return (
@@ -25,16 +25,21 @@ const AIModelsSettings = ({
             style={[
               styles.modelItem,
               { borderBottomColor: borderColor },
-              currentModel === model.name && styles.selectedModel
+              defaultModel === model.name && styles.selectedModel
             ]}
-            onPress={() => setCurrentModel(model.name)}
+            onPress={() => saveDefaultModel(model.name)}
           >
             <View style={styles.modelInfo}>
               <Text style={[styles.modelName, { color: textColor }]}>
                 {model.name}
               </Text>
+              {defaultModel === model.name && (
+                <Text style={[styles.modelDescription, { color: textColor + '80' }]}>
+                  Default model for new chats
+                </Text>
+              )}
             </View>
-            {currentModel === model.name && (
+            {defaultModel === model.name && (
               <Ionicons name="checkmark" size={24} color="#007AFF" />
             )}
           </TouchableOpacity>
@@ -61,6 +66,10 @@ const styles = StyleSheet.create({
   },
   modelName: {
     fontSize: 16,
+    marginBottom: 4,
+  },
+  modelDescription: {
+    fontSize: 12,
   },
   selectedModel: {
     backgroundColor: 'rgba(0, 122, 255, 0.1)',
