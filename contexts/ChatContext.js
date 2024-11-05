@@ -29,6 +29,7 @@ export const ChatProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasCalendarAccess, setHasCalendarAccess] = useState(false);
   const [defaultModel, setDefaultModel] = useState('GPT-3.5');
+  const [hiddenModels, setHiddenModels] = useState([]);
 
   const changeModel = async (newModel) => {
     console.log('Model changed to:', newModel);
@@ -796,7 +797,7 @@ export const ChatProvider = ({ children }) => {
         hasApiKey: !!apiKey
       });
 
-      // Base models without Grok
+      // Base models that should always be included
       const baseModels = [
         {
           id: 'gpt-3.5-turbo',
@@ -804,25 +805,24 @@ export const ChatProvider = ({ children }) => {
         }
       ];
 
-      // Only add Grok if we have a valid API key
-      const defaultModels = grokApiKey ? [
-        ...baseModels,
-        {
+      // Add Grok if API key is present
+      if (grokApiKey) {
+        baseModels.push({
           id: 'grok-beta',
           name: 'Grok'
-        }
-      ] : baseModels;
+        });
+      }
 
-      console.log('Default models:', defaultModels);
-
-      const activeApiKey = useBuiltInKey ? OPENAI_API_KEY : apiKey;
-
-      if (!activeApiKey) {
-        setAvailableModels(defaultModels);
-        const newModelMap = Object.fromEntries(defaultModels.map(model => [model.name, model.id]));
+      // If no API keys are available, just use base models
+      if (!apiKey && !useBuiltInKey) {
+        console.log('No API keys available, using base models only');
+        setAvailableModels(baseModels);
+        const newModelMap = Object.fromEntries(baseModels.map(model => [model.name, model.id]));
         setModelMap(newModelMap);
         return;
       }
+
+      const activeApiKey = useBuiltInKey ? OPENAI_API_KEY : apiKey;
 
       const response = await axios.get('https://api.openai.com/v1/models', {
         headers: {
@@ -837,9 +837,9 @@ export const ChatProvider = ({ children }) => {
           name: model.id.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
         }));
 
-      // Combine default models with fetched models
-      const uniqueModels = [...defaultModels, ...models.filter(model => 
-        !defaultModels.some(dm => dm.id === model.id)
+      // Combine base models with fetched models
+      const uniqueModels = [...baseModels, ...models.filter(model => 
+        !baseModels.some(dm => dm.id === model.id)
       )];
       
       setAvailableModels(uniqueModels);
@@ -894,7 +894,7 @@ export const ChatProvider = ({ children }) => {
 
   useEffect(() => {
     fetchAvailableModels();
-  }, [apiKey, useBuiltInKey]);
+  }, [apiKey, useBuiltInKey, grokApiKey]);
 
   const loadDefaultModel = async () => {
     try {
@@ -917,6 +917,34 @@ export const ChatProvider = ({ children }) => {
       setCurrentModel(model);
     } catch (error) {
       console.error('Error saving default model:', error);
+    }
+  };
+
+  const loadHiddenModels = async () => {
+    try {
+      const savedHiddenModels = await AsyncStorage.getItem('hidden_models');
+      if (savedHiddenModels) {
+        setHiddenModels(JSON.parse(savedHiddenModels));
+      }
+    } catch (error) {
+      console.error('Error loading hidden models:', error);
+    }
+  };
+
+  const toggleModelVisibility = async (modelName) => {
+    try {
+      if (modelName === defaultModel) {
+        return; // Can't hide default model
+      }
+      
+      const newHiddenModels = hiddenModels.includes(modelName)
+        ? hiddenModels.filter(m => m !== modelName)
+        : [...hiddenModels, modelName];
+      
+      await AsyncStorage.setItem('hidden_models', JSON.stringify(newHiddenModels));
+      setHiddenModels(newHiddenModels);
+    } catch (error) {
+      console.error('Error toggling model visibility:', error);
     }
   };
 
@@ -946,6 +974,8 @@ export const ChatProvider = ({ children }) => {
       isLoading,
       defaultModel,
       saveDefaultModel,
+      hiddenModels,
+      toggleModelVisibility,
     }}>
       {children}
     </ChatContext.Provider>

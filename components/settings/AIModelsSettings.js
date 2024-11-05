@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SettingsNestedMenu from './SettingsNestedMenu';
 import { useChat } from '../../contexts/ChatContext';
@@ -13,7 +13,9 @@ const AIModelsSettings = ({
   const { 
     availableModels,
     defaultModel,
-    saveDefaultModel
+    saveDefaultModel,
+    hiddenModels,
+    toggleModelVisibility
   } = useChat();
 
   return (
@@ -27,10 +29,16 @@ const AIModelsSettings = ({
               { borderBottomColor: borderColor },
               defaultModel === model.name && styles.selectedModel
             ]}
-            onPress={() => saveDefaultModel(model.name)}
+            onPress={() => !hiddenModels.includes(model.name) && saveDefaultModel(model.name)}
           >
             <View style={styles.modelInfo}>
-              <Text style={[styles.modelName, { color: textColor }]}>
+              <Text style={[
+                styles.modelName, 
+                { 
+                  color: textColor,
+                  opacity: hiddenModels.includes(model.name) ? 0.5 : 1 
+                }
+              ]}>
                 {model.name}
               </Text>
               {defaultModel === model.name && (
@@ -39,9 +47,18 @@ const AIModelsSettings = ({
                 </Text>
               )}
             </View>
-            {defaultModel === model.name && (
-              <Ionicons name="checkmark" size={24} color="#007AFF" />
-            )}
+            <View style={styles.controls}>
+              {defaultModel === model.name && (
+                <Ionicons name="checkmark" size={24} color="#007AFF" style={styles.checkmark} />
+              )}
+              <Switch
+                value={!hiddenModels.includes(model.name)}
+                onValueChange={() => toggleModelVisibility(model.name)}
+                disabled={defaultModel === model.name}
+                trackColor={{ false: '#767577', true: '#81b0ff' }}
+                thumbColor={hiddenModels.includes(model.name) ? '#f4f3f4' : '#f5dd4b'}
+              />
+            </View>
           </TouchableOpacity>
         ))}
       </View>
@@ -74,6 +91,14 @@ const styles = StyleSheet.create({
   selectedModel: {
     backgroundColor: 'rgba(0, 122, 255, 0.1)',
   },
+  controls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  checkmark: {
+    marginRight: 10,
+  }
 });
 
 export default AIModelsSettings;

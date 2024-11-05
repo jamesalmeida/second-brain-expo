@@ -5,7 +5,7 @@ import { useChat } from '../contexts/ChatContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 const Header = ({ navigation }) => {
-  const { createNewChat, availableModels, currentModel, setCurrentModel } = useChat();
+  const { createNewChat, availableModels, currentModel, setCurrentModel, hiddenModels } = useChat();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const { isDarkMode } = useTheme();
 
@@ -17,6 +17,8 @@ const Header = ({ navigation }) => {
     setCurrentModel(model);
     toggleModal();
   };
+
+  const visibleModels = availableModels.filter(model => !hiddenModels.includes(model.name));
 
   return (
     <View style={[styles.container, { backgroundColor: isDarkMode ? 'black' : 'white' }]}>
@@ -55,9 +57,9 @@ const Header = ({ navigation }) => {
                 />
               </TouchableOpacity>
             </View>
-            {availableModels.length > 0 ? (
+            {visibleModels.length > 0 ? (
               <FlatList
-                data={availableModels}
+                data={visibleModels}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                   <TouchableOpacity
