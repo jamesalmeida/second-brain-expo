@@ -11,6 +11,7 @@ import { Image as ExpoImage } from 'expo-image';
 import ImageMessage from './ImageMessage';
 import { useSharedValue } from 'react-native-reanimated';
 import ChatBubble from './ChatBubble';
+import MapMessage from './MapMessage';
 
 const ChatArea = ({ bottomBarRef, openSettings }) => {
   const { chats, currentChatId, isGeneratingImage, isLoading } = useChat();
@@ -98,7 +99,12 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
   };
 
   const handleLongPress = async (message, index) => {
-    const isImage = message.content.startsWith('<img');
+    // Skip if it's a location message
+    if (message.type === 'location') {
+      return;
+    }
+
+    const isImage = message.content && message.content.startsWith('<img');
 
     if (Platform.OS === 'web') {
       // Web handling
@@ -389,7 +395,18 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
         ) : (
           <>
             {messages.map((message, index) => {
-              if (message.content.startsWith('<img')) {
+              // First check if it's a location message
+              if (message.type === 'location') {
+                return (
+                  <MapMessage
+                    key={index}
+                    location={message.content}
+                  />
+                );
+              }
+              
+              // Then check for image messages
+              if (message.content && message.content.startsWith('<img')) {
                 return (
                   <ImageMessage
                     key={index}
@@ -408,6 +425,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
                 );
               }
               
+              // Finally render regular chat bubbles
               return (
                 <ChatBubble
                   key={index}

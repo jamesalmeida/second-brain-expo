@@ -7,6 +7,7 @@ import { OpenAI } from 'openai';
 import { Platform } from 'react-native';
 import { CalendarService } from '../services/CalendarService';
 import { ReminderService } from '../services/ReminderService';
+import { LocationService } from '../services/LocationService';
 
 // TOGGLE FOR WEB DEVELOPMENT ONLY - DISABLE IN PRODUCTION
 // API KEYS ARE NOT SUPPORTED ON WEB IN THIS VERSION
@@ -359,6 +360,30 @@ export const ChatProvider = ({ children }) => {
     return null;
   };
 
+  const handleLocationQuery = async (message) => {
+    const locationKeywords = ['where am i', 'my location', 'current location', 'show me the map'];
+    
+    const hasLocationWord = locationKeywords.some(keyword => 
+      message.toLowerCase().includes(keyword)
+    );
+
+    if (hasLocationWord) {
+      const result = await LocationService.getCurrentLocation();
+      if (result.success) {
+        return {
+          type: 'location',
+          content: result.location
+        };
+      } else {
+        return {
+          type: 'text',
+          content: result.message
+        };
+      }
+    }
+    return null;
+  };
+
   const sendMessageToOpenAI = async (userMessage) => {
     setIsLoading(true);
 
@@ -407,6 +432,21 @@ export const ChatProvider = ({ children }) => {
         console.log('Current model unavailable, falling back to GPT-3.5');
         modelToUse = 'gpt-3.5-turbo';
         setCurrentModel('GPT-3.5');
+      }
+
+      // Check for location query first
+      const locationResponse = await handleLocationQuery(userMessage);
+      if (locationResponse) {
+        const updatedChatsWithResponse = updatedChatsWithUserMessage.map(chat => 
+          chat.id === currentChatId 
+            ? { ...chat, messages: [...chat.messages, locationResponse] }
+            : chat
+        );
+        setChats(updatedChatsWithResponse);
+        const updatedChat = updatedChatsWithResponse.find(chat => chat.id === currentChatId);
+        await saveChat(updatedChat);
+        setIsLoading(false);
+        return;
       }
 
       // First, ask the model if this is a calendar or image request
