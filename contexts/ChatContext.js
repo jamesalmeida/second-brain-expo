@@ -82,7 +82,10 @@ export const ChatProvider = ({ children }) => {
       }
       fetchAvailableModels();
       loadApiKeySettings();
-      loadDefaultModel();
+      await Promise.all([
+        loadDefaultModel(),
+        loadHiddenModels()
+      ]);
     };
     initializeChats();
   }, []);
@@ -931,6 +934,13 @@ export const ChatProvider = ({ children }) => {
 
   const saveDefaultModel = async (model) => {
     try {
+      // If the new default model is currently hidden, unhide it
+      if (hiddenModels.includes(model)) {
+        const newHiddenModels = hiddenModels.filter(m => m !== model);
+        await AsyncStorage.setItem('hidden_models', JSON.stringify(newHiddenModels));
+        setHiddenModels(newHiddenModels);
+      }
+
       await AsyncStorage.setItem('default_model', model);
       setDefaultModel(model);
       setCurrentModel(model);

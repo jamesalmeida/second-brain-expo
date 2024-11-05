@@ -150,5 +150,29 @@ export const CalendarService = {
         message: 'Failed to create event: ' + error.message
       };
     }
+  },
+
+  getCalendars: async () => {
+    try {
+      const { status } = await Calendar.getCalendarPermissionsAsync();
+      if (status !== 'granted') {
+        return { error: 'Calendar permission not granted' };
+      }
+
+      const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+      return calendars.map(calendar => ({
+        id: calendar.id,
+        title: calendar.title,
+        source: calendar.source.name,
+        isPrimary: calendar.isPrimary,
+        color: calendar.color,
+        allowsModifications: calendar.allowsModifications,
+        type: calendar.type,
+        isVisible: true // Default to visible
+      }));
+    } catch (error) {
+      console.error('Error fetching calendars:', error);
+      return { error: 'Failed to fetch calendars' };
+    }
   }
 };

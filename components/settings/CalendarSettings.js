@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, Switch, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Switch, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SettingsNestedMenu from './SettingsNestedMenu';
+import SelectCalendars from './SelectCalendars';
 
 const CalendarSettings = ({ 
   isDarkMode,
@@ -13,8 +14,29 @@ const CalendarSettings = ({
   textColor,
   borderColor 
 }) => {
+  const [currentMenu, setCurrentMenu] = useState('main');
+
+  const handleBack = () => {
+    if (currentMenu === 'main') {
+      onBack();
+    } else {
+      setCurrentMenu('main');
+    }
+  };
+
+  if (currentMenu === 'selectCalendars') {
+    return (
+      <SelectCalendars
+        isDarkMode={isDarkMode}
+        onBack={() => setCurrentMenu('main')}
+        textColor={textColor}
+        borderColor={borderColor}
+      />
+    );
+  }
+
   return (
-    <SettingsNestedMenu title="Calendar Settings" onBack={onBack} isDarkMode={isDarkMode}>
+    <SettingsNestedMenu title="Calendar Settings" onBack={handleBack} isDarkMode={isDarkMode}>
       <View style={styles.container}>
         <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <View style={styles.settingItemContent}>
@@ -33,6 +55,16 @@ const CalendarSettings = ({
             onValueChange={toggleCalendarAccess}
           />
         </View>
+
+        {hasCalendarPermission && (
+          <TouchableOpacity 
+            style={[styles.settingItem, { borderBottomColor: borderColor }]}
+            onPress={() => setCurrentMenu('selectCalendars')}
+          >
+            <Text style={{ color: textColor }}>Select Calendars</Text>
+            <Ionicons name="chevron-forward" size={24} color={textColor} />
+          </TouchableOpacity>
+        )}
 
         <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <View style={styles.settingItemContent}>
