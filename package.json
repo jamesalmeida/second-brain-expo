@@ -26,7 +26,8 @@
     "expo-clipboard": "~6.0.3",
     "expo-media-library": "~16.0.5",
     "expo-calendar": "~13.0.5",
-    "expo-location": "~17.0.1"
+    "expo-location": "~17.0.1",
+    "react-native-maps": "1.14.0"
   },
   "devDependencies": {
     "@babel/core": "^7.19.3"
