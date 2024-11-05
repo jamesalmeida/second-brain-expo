@@ -299,12 +299,19 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
     }).start(() => setCurrentMenu(menuName));
   };
 
+  const handleSheetClose = (index) => {
+    if (index === -1) {
+      setCurrentMenu('main');
+      slideAnim.setValue(0);
+    }
+  };
+
   return (
     <BottomSheet
       ref={bottomSheetRef}
       index={-1}
       snapPoints={snapPoints}
-      onChange={handleSheetChanges}
+      onChange={handleSheetClose}
       enablePanDownToClose={true}
       backdropComponent={renderBackdrop}
       handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#ffffff' : '#000000' }}
@@ -333,14 +340,16 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             }
           ]}
         >
-          <Text style={[styles.settingsTitle, { color: textColor }]}>🧠 Settings</Text>
+          <View style={styles.titleContainer}>
+            <Text style={[styles.settingsTitle, { color: textColor }]}>🧠 Settings</Text>
+          </View>
 
           <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => bottomSheetRef.current?.close()}
-        >
-          <Ionicons name="close-circle-outline" size={30} color={textColor} />
-        </TouchableOpacity>
+            style={styles.closeButton}
+            onPress={() => bottomSheetRef.current?.close()}
+          >
+            <Ionicons name="close-circle-outline" size={30} color={textColor} />
+          </TouchableOpacity>
 
           {/* CHANGE APP THEME */}
           <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
@@ -436,8 +445,9 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             <Switch
               value={hasLocationPermission}
               onValueChange={toggleLocationAccess}
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={hasLocationPermission ? '#f5dd4b' : '#f4f3f4'}
+              trackColor={{ false: '#767577', true: '#34c759' }}
+              thumbColor={'#ffffff'}
+              ios_backgroundColor="#767577"
             />
           </View>
 
@@ -726,6 +736,12 @@ const styles = StyleSheet.create({
   },
   overlayMenu: {
     left: 0,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
   },
 });
 
