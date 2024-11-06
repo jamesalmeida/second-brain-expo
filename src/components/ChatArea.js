@@ -4,7 +4,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
 import { useChat } from '../contexts/ChatContext';
-import brainLogo from '../assets/images/brain-gray.png'; // Adjust the path as necessary
+import brainLogo from '../../assets/images/brain-gray.png'; // Adjust the path as necessary
 import { useTheme } from '../contexts/ThemeContext';
 import Markdown from 'react-native-markdown-display';
 import { Image as ExpoImage } from 'expo-image';
