@@ -406,6 +406,15 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             <Text style={{ color: textColor }}>API Keys</Text>
             <Ionicons name="chevron-forward" size={24} color={textColor} />
           </TouchableOpacity>
+          
+          {/* AI Models */}
+          <TouchableOpacity
+            style={[styles.settingItem, { borderBottomColor: borderColor }]}
+            onPress={() => handleMenuTransition('aimodels')}
+          >
+            <Text style={{ color: textColor }}>AI Models</Text>
+            <Ionicons name="chevron-forward" size={24} color={textColor} />
+          </TouchableOpacity>
 
           {/* Calendar Settings Button */}
           <TouchableOpacity 
@@ -416,14 +425,6 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             <Ionicons name="chevron-forward" size={24} color={textColor} />
           </TouchableOpacity>
 
-          {/* AI Models */}
-          <TouchableOpacity
-            style={[styles.settingItem, { borderBottomColor: borderColor }]}
-            onPress={() => handleMenuTransition('aimodels')}
-          >
-            <Text style={{ color: textColor }}>AI Models</Text>
-            <Ionicons name="chevron-forward" size={24} color={textColor} />
-          </TouchableOpacity>
 
           {/* LOCATION ACCESS */}
           <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
