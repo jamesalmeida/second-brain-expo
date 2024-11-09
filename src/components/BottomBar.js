@@ -3,6 +3,7 @@ import { View, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-n
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import { useTheme } from '../contexts/ThemeContext';
+import ChatOptionsSheet from './ChatOptionsSheet';
 
 const BottomBar = forwardRef((props, ref) => {
   const { isDarkMode } = useTheme();
@@ -12,6 +13,23 @@ const BottomBar = forwardRef((props, ref) => {
   const { sendMessageToOpenAI } = useChat();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const inputRef = useRef(null);
+  const chatOptionsSheetRef = useRef(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  const snapPoints = ['60%'];
+
+  const handleSheetChanges = (index) => {
+    console.log('handleSheetChanges called with index:', index);
+    console.log('Current sheet state:', isSheetOpen);
+    setIsSheetOpen(index !== -1);
+    if (index === -1) {
+      console.log('Attempting to focus input');
+      inputRef.current?.focus();
+    } else {
+      console.log('Attempting to blur input');
+      inputRef.current?.blur();
+    }
+  };
 
   useImperativeHandle(ref, () => ({
     focusInput: () => {
@@ -41,59 +59,78 @@ const BottomBar = forwardRef((props, ref) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: isDarkMode ? 'black' : 'white' }]}>
-      <View style={[styles.inputContainer, { borderColor: isDarkMode ? '#444' : '#ccc' }]}>
-        <TouchableOpacity onPress={() => {/* TODO: Implement attachment functionality */}} style={styles.iconButton}>
-          <Ionicons name="add-circle-outline" size={24} color={isDarkMode ? '#fff' : '#000'} />
-        </TouchableOpacity>
-        <TextInput
-          ref={inputRef}
-          style={[styles.input, { color: isDarkMode ? '#fff' : '#000' }]}
-          placeholder="Message"
-          placeholderTextColor={isDarkMode ? '#888' : '#999'}
-          value={message}
-          onChangeText={setMessage}
-          onSubmitEditing={handleSend}
-          onFocus={() => setIsInputFocused(true)}
-          onBlur={() => setIsInputFocused(false)}
-          blurOnSubmit={false}
-          multiline={true}
-          textAlignVertical="center"
-          keyboardType="default"
-          autoComplete="off"
-          autoCorrect={false}
-          autoCapitalize="none"
-          textContentType="none"
-          importantForAutofill="no"
-          passwordRules=""
-          secureTextEntry={false}
-          caretHidden={false}
-          spellCheck={false}
-        />
-        <Animated.View style={{ opacity: fadeAnim }}>
-          <TouchableOpacity onPress={handleSend} style={styles.iconButton}>
-            <Ionicons name="send" size={24} color={isDarkMode ? '#fff' : '#000'} />
+    <View style={{ flex: 1 }}>
+      <View style={[styles.container, { backgroundColor: isDarkMode ? 'black' : 'white' }]}>
+        <View style={[styles.inputContainer, { borderColor: isDarkMode ? '#444' : '#ccc' }]}>
+          <TouchableOpacity 
+            onPress={() => {
+              console.log('💬 Chat Options button pressed');
+              if (chatOptionsSheetRef.current) {
+                console.log('Attempting to open sheet...');
+                chatOptionsSheetRef.current.snapToIndex(0);
+              }
+            }} 
+            style={styles.iconButton}
+          >
+            <Ionicons name="hardware-chip-outline" size={24} color={isDarkMode ? '#fff' : '#000'} />
           </TouchableOpacity>
-        </Animated.View>
-        <TouchableOpacity onPress={handleVoiceInput} style={styles.iconButton}>
-          {isRecording ? (
-            <View style={styles.recordingButton}>
-              <Ionicons name="stop" size={16} color="#fff" />
-            </View>
-          ) : (
-            <Ionicons name="mic-outline" size={24} color={isDarkMode ? '#fff' : '#000'} />
-          )}
-        </TouchableOpacity>
+          <TextInput
+            ref={inputRef}
+            style={[styles.input, { color: isDarkMode ? '#fff' : '#000' }]}
+            placeholder="Message"
+            placeholderTextColor={isDarkMode ? '#888' : '#999'}
+            value={message}
+            onChangeText={setMessage}
+            onSubmitEditing={handleSend}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setIsInputFocused(false)}
+            blurOnSubmit={false}
+            multiline={true}
+            textAlignVertical="center"
+            keyboardType="default"
+            autoComplete="off"
+            autoCorrect={false}
+            autoCapitalize="none"
+            textContentType="none"
+            importantForAutofill="no"
+            passwordRules=""
+            secureTextEntry={false}
+            caretHidden={false}
+            spellCheck={false}
+          />
+          <Animated.View style={{ opacity: fadeAnim }}>
+            <TouchableOpacity onPress={handleSend} style={styles.iconButton}>
+              <Ionicons name="send" size={24} color={isDarkMode ? '#fff' : '#000'} />
+            </TouchableOpacity>
+          </Animated.View>
+          <TouchableOpacity onPress={handleVoiceInput} style={styles.iconButton}>
+            {isRecording ? (
+              <View style={styles.recordingButton}>
+                <Ionicons name="stop" size={16} color="#fff" />
+              </View>
+            ) : (
+              <Ionicons name="mic-outline" size={24} color={isDarkMode ? '#fff' : '#000'} />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
+      <ChatOptionsSheet
+        bottomSheetRef={chatOptionsSheetRef}
+        snapPoints={snapPoints}
+        handleSheetChanges={handleSheetChanges}
+      />
     </View>
   );
 });
 
 const styles = StyleSheet.create({
   container: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 10,
-    // borderTopWidth: 1,
-    // borderTopColor: '#ccc',
+    zIndex: 1,
   },
   inputContainer: {
     flexDirection: 'row',
