@@ -8,17 +8,15 @@ const Header = ({ navigation }) => {
   const { createNewChat, availableModels, currentModel, setCurrentModel, hiddenModels } = useChat();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const { isDarkMode } = useTheme();
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  });
 
   const toggleModal = () => {
     setIsModalVisible(!isModalVisible);
   };
-
-  const selectModel = (model) => {
-    setCurrentModel(model);
-    toggleModal();
-  };
-
-  const visibleModels = availableModels.filter(model => !hiddenModels.includes(model.name));
 
   return (
     <View style={[styles.container, { backgroundColor: isDarkMode ? 'black' : 'white' }]}>
@@ -26,7 +24,7 @@ const Header = ({ navigation }) => {
         <Ionicons name="menu" size={24} color={isDarkMode ? 'white' : 'black'} />
       </TouchableOpacity>
       <TouchableOpacity onPress={toggleModal} style={styles.modelSelector}>
-        <Text style={{ color: isDarkMode ? 'white' : 'black', marginRight: 5 }}>{currentModel}</Text>
+        <Text style={{ color: isDarkMode ? 'white' : 'black', marginRight: 5 }}>{currentDate}</Text>
         <Ionicons name="chevron-down" size={24} color={isDarkMode ? 'white' : 'black'} />
       </TouchableOpacity>
       <TouchableOpacity onPress={createNewChat}>
@@ -47,7 +45,7 @@ const Header = ({ navigation }) => {
           <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#2c2c2e' : 'white' }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: isDarkMode ? 'white' : 'black' }]}>
-                Select Model
+                Date Selector
               </Text>
               <TouchableOpacity onPress={toggleModal} style={styles.closeButton}>
                 <Ionicons 
@@ -57,35 +55,10 @@ const Header = ({ navigation }) => {
                 />
               </TouchableOpacity>
             </View>
-            {visibleModels.length > 0 ? (
-              <FlatList
-                data={visibleModels}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    onPress={() => selectModel(item.name)}
-                    style={[
-                      styles.modelItem,
-                      currentModel === item.name && styles.selectedModelItem
-                    ]}
-                  >
-                    <Text style={{ 
-                      color: isDarkMode ? 'white' : 'black',
-                      fontWeight: currentModel === item.name ? 'bold' : 'normal'
-                    }}>
-                      {item.name}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                scrollEnabled={true}
-                showsVerticalScrollIndicator={true}
-                contentContainerStyle={styles.flatListContent}
-              />
-            ) : (
+            
               <Text style={[styles.noModelsText, { color: isDarkMode ? 'white' : 'black' }]}>
-                No models available
+                Scrollable Calendar Goes Here
               </Text>
-            )}
           </View>
         </TouchableOpacity>
       </Modal>
