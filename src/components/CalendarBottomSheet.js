@@ -3,7 +3,7 @@ import { View, Text } from 'react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Portal } from '@gorhom/portal';
 
-const DateBottomSheet = ({ bottomSheetRef, snapPoints, handleSheetChanges, isDarkMode }) => {
+const CalendarBottomSheet = ({ bottomSheetRef, snapPoints, handleSheetChanges, isDarkMode }) => {
   const renderBackdrop = props => (
     <BottomSheetBackdrop
       {...props}
@@ -38,4 +38,4 @@ const DateBottomSheet = ({ bottomSheetRef, snapPoints, handleSheetChanges, isDar
   );
 };
 
-export default DateBottomSheet;
+export default CalendarBottomSheet;

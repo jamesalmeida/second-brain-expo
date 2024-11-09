@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Keyboard } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import { useTheme } from '../contexts/ThemeContext';
-import DateBottomSheet from './DateBottomSheet';
+import CalendarBottomSheet from './CalendarBottomSheet';
 
 const Header = ({ navigation }) => {
   const { createNewChat } = useChat();
@@ -34,14 +34,19 @@ const Header = ({ navigation }) => {
         onPress={handleOpenDateSheet}
         style={styles.modelSelector}
       >
-        <Text style={{ color: isDarkMode ? 'white' : 'black', marginRight: 5 }}>{currentDate}</Text>
-        <Ionicons name="chevron-down" size={24} color={isDarkMode ? 'white' : 'black'} />
+        <Ionicons 
+          name="calendar-outline" 
+          size={20} 
+          color={isDarkMode ? 'white' : 'black'} 
+          style={styles.calendarIcon}
+        />
+        <Text style={[styles.dateText, { color: isDarkMode ? 'white' : 'black' }]}>{currentDate}</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={createNewChat}>
         <Ionicons name="add" size={24} color={isDarkMode ? 'white' : 'black'} />
       </TouchableOpacity>
 
-      <DateBottomSheet
+      <CalendarBottomSheet
         bottomSheetRef={dateBottomSheetRef}
         snapPoints={snapPoints}
         handleSheetChanges={handleSheetChanges}
@@ -61,6 +66,12 @@ const styles = StyleSheet.create({
   modelSelector: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  dateText: {
+    marginRight: 5,
+  },
+  calendarIcon: {
+    paddingRight: 5,
   },
 });
 
