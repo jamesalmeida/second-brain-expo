@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, Animated, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -59,12 +59,13 @@ const BottomBar = forwardRef((props, ref) => {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View>
       <View style={[styles.container, { backgroundColor: isDarkMode ? 'black' : 'white' }]}>
         <View style={[styles.inputContainer, { borderColor: isDarkMode ? '#444' : '#ccc' }]}>
           <TouchableOpacity 
             onPress={() => {
               console.log('💬 Chat Options button pressed');
+              Keyboard.dismiss();
               if (chatOptionsSheetRef.current) {
                 console.log('Attempting to open sheet...');
                 chatOptionsSheetRef.current.snapToIndex(0);
@@ -130,7 +131,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 10,
-    zIndex: 1,
   },
   inputContainer: {
     flexDirection: 'row',
