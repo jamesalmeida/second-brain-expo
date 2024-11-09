@@ -322,6 +322,32 @@ export const ChatProvider = ({ children }) => {
     }
   ];
 
+  const previousResponseFunction = [
+    {
+      name: "checkPreviousResponse",
+      description: "Check if the user is referring to a previous AI response and use it as context",
+      parameters: {
+        type: "object",
+        properties: {
+          isPreviousReference: {
+            type: "boolean",
+            description: "Whether the user is referring to a previous response"
+          },
+          referenceType: {
+            type: "string",
+            enum: ["image", "text", "both"],
+            description: "The type of reference being made to the previous response"
+          },
+          contextNeeded: {
+            type: "boolean",
+            description: "Whether additional context from the previous response is needed"
+          }
+        },
+        required: ["isPreviousReference", "referenceType"]
+      }
+    }
+  ];
+
   const handleCalendarQuery = async (message) => {
     const calendarKeywords = ['calendar', 'events', 'schedule', 'appointment', 'meeting'];
     const todayKeywords = ['today', 'today\'s'];
@@ -464,14 +490,14 @@ export const ChatProvider = ({ children }) => {
         messages: [
           {
             role: "system",
-            content: contextMessage
+            content: `${contextMessage}\n\nPrevious messages for context: ${messages.slice(-3).map(m => `${m.role}: ${m.content}`).join('\n')}`
           },
           { 
             role: "user", 
             content: userMessage 
           }
         ],
-        functions: [...openAIImageGenerationFunctions, ...calendarFunctions, ...reminderFunctions],
+        functions: [...previousResponseFunction, ...openAIImageGenerationFunctions, ...calendarFunctions, ...reminderFunctions],
         function_call: "auto"
       });
 
@@ -757,6 +783,72 @@ export const ChatProvider = ({ children }) => {
           const updatedChat = updatedChatsWithResponse.find(chat => chat.id === currentChatId);
           await saveChat(updatedChat);
           return;
+        } else if (functionCall.name === "checkPreviousReference" && functionArgs.isPreviousReference) {
+          const recentMessages = messages.slice(-3); // Get last 3 messages
+          const previousAIResponse = recentMessages.reverse().find(m => m.role === 'assistant');
+          
+          if (!previousAIResponse) {
+            const noContextResponse = "I don't see a previous response to refer to. Could you please be more specific?";
+            const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
+              chat.id === currentChatId 
+                ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: noContextResponse }] }
+                : chat
+            );
+            setChats(updatedChatsWithAIResponse);
+            return;
+          }
+
+          // If it's an image reference, modify the request accordingly
+          if (functionArgs.referenceType === 'image' && previousAIResponse.content.includes('<img')) {
+            const imagePromptMatch = previousAIResponse.content.match(/data-revised-prompt="([^"]+)"/);
+            if (imagePromptMatch) {
+              const previousPrompt = imagePromptMatch[1];
+              // Create a new message array with the context
+              const messagesWithContext = [
+                ...messages,
+                {
+                  role: 'system',
+                  content: `Previous image prompt: "${previousPrompt}". User is referring to this image.`
+                }
+              ];
+              
+              // Send a new request with the context
+              const completion = await openai.chat.completions.create({
+                model: modelToUse,
+                messages: messagesWithContext,
+                functions: [...openAIImageGenerationFunctions],
+                function_call: "auto"
+              });
+              
+              // Continue with normal processing of the completion
+              return handleFunctionResponse(completion);
+            }
+          }
+
+          // For text references
+          if (functionArgs.referenceType === 'text' || functionArgs.referenceType === 'both') {
+            const messagesWithContext = [
+              ...messages,
+              {
+                role: 'system',
+                content: `Previous assistant response: "${previousAIResponse.content}". User is referring to this response.`
+              }
+            ];
+            
+            const completion = await openai.chat.completions.create({
+              model: modelToUse,
+              messages: messagesWithContext
+            });
+
+            const aiMessage = completion.choices[0].message.content;
+            const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
+              chat.id === currentChatId 
+                ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
+                : chat
+            );
+            setChats(updatedChatsWithAIResponse);
+            return;
+          }
         }
       } else {
         const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
