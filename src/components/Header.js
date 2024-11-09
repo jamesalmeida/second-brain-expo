@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -16,6 +16,11 @@ const Header = ({ navigation }) => {
     year: 'numeric'
   });
 
+  const handleOpenDateSheet = () => {
+    Keyboard.dismiss();
+    dateBottomSheetRef.current?.snapToIndex(0);
+  };
+
   const handleSheetChanges = (index) => {
     console.log('handleSheetChanges', index);
   };
@@ -26,7 +31,7 @@ const Header = ({ navigation }) => {
         <Ionicons name="menu" size={24} color={isDarkMode ? 'white' : 'black'} />
       </TouchableOpacity>
       <TouchableOpacity 
-        onPress={() => dateBottomSheetRef.current?.snapToIndex(0)} 
+        onPress={handleOpenDateSheet}
         style={styles.modelSelector}
       >
         <Text style={{ color: isDarkMode ? 'white' : 'black', marginRight: 5 }}>{currentDate}</Text>
