@@ -457,7 +457,9 @@ export const ChatProvider = ({ children }) => {
         messageCount: updatedChatsWithUserMessage.find(c => c.id === currentChatId)?.messages.length
       });
 
-      console.log('User prompt:', userMessage);
+      console.log('--------- USER MESSAGE START ---------');
+      console.log(userMessage);
+      console.log('--------- USER MESSAGE END ---------');
     
       const currentChat = updatedChatsWithUserMessage.find(chat => chat.id === currentChatId);
       const messages = currentChat ? currentChat.messages : [];
@@ -724,7 +726,9 @@ export const ChatProvider = ({ children }) => {
               });
             }
 
-            console.log('API Response:', completion);
+            console.log('--------- API RESPONSE FROM DALL-E 3 START ---------');
+            console.log(completion);
+            console.log('--------- API RESPONSE FROM DALL-E 3 END ---------');
 
             if (!completion || !completion.choices || !completion.choices[0]) {
               throw new Error('Invalid response from API');
@@ -965,7 +969,9 @@ export const ChatProvider = ({ children }) => {
           messages: messages,
         });
 
-        console.log('API Response:', completion);
+        console.log('--------- API CHAT COMPLETION RESPONSE START ---------');
+        console.log(completion);
+        console.log('--------- API CHAT COMPLETION RESPONSE END ---------');
 
         if (!completion || !completion.choices || !completion.choices[0]) {
           throw new Error('Invalid response from API');
