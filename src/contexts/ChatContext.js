@@ -119,6 +119,12 @@ export const ChatProvider = ({ children }) => {
   };
 
   const saveChat = async (chat) => {
+    console.log('💾 Save Flow: Starting save operation', {
+      platform: Platform.OS,
+      chatId: chat.id,
+      messageCount: chat.messages.length,
+      lastMessage: chat.messages[chat.messages.length - 1]?.content.slice(0, 50) + '...'
+    });
     try {
       if (Platform.OS === 'web') {
         // Web storage implementation
@@ -412,6 +418,12 @@ export const ChatProvider = ({ children }) => {
   };
 
   const sendMessageToOpenAI = async (userMessage) => {
+    console.log('🚀 Message Flow: Starting message processing', {
+      userMessage,
+      currentChatId,
+      chatCount: chats.length,
+      currentModel
+    });
     setIsLoading(true);
 
     try {
@@ -439,6 +451,11 @@ export const ChatProvider = ({ children }) => {
         );
         setChats(updatedChatsWithUserMessage);
       }
+
+      console.log('🚀 Message Flow: Chat updated with user message', {
+        chatExists,
+        messageCount: updatedChatsWithUserMessage.find(c => c.id === currentChatId)?.messages.length
+      });
 
       console.log('User prompt:', userMessage);
     
@@ -485,6 +502,17 @@ export const ChatProvider = ({ children }) => {
         timeStyle: 'long'
       })} (${userTimezone})`;
 
+      console.log('🚀 Message Flow: Checking for special functions', {
+        contextMessage,
+        modelToUse,
+        availableFunctions: [
+          ...previousResponseFunction.map(f => f.name),
+          ...openAIImageGenerationFunctions.map(f => f.name),
+          ...calendarFunctions.map(f => f.name),
+          ...reminderFunctions.map(f => f.name)
+        ]
+      });
+
       const functionResponse = await openai.chat.completions.create({
         model: modelToUse,
         messages: [
@@ -504,8 +532,53 @@ export const ChatProvider = ({ children }) => {
       const functionCall = functionResponse.choices[0].message.function_call;
       
       if (functionCall) {
-        const functionArgs = JSON.parse(functionCall.arguments);
-        
+        let functionArgs;
+        try {
+          functionArgs = JSON.parse(functionCall.arguments);
+          console.log('🚀 Message Flow: Function detected', {
+            functionName: functionCall.name,
+            args: functionArgs,
+            isCalendarQuery: functionCall.name === "checkCalendar" && functionArgs?.isCalendarQuery,
+            isImageGeneration: functionCall.name === "generateDallEImage" && functionArgs?.shouldGenerateImage,
+            isReminderQuery: functionCall.name === "checkReminders" && functionArgs?.isReminderQuery
+          });
+        } catch (parseError) {
+          console.log('❌ Message Flow: Error parsing function arguments', {
+            functionName: functionCall.name,
+            rawArgs: functionCall.arguments,
+            error: parseError.message
+          });
+          throw parseError;
+        }
+
+        // Add more detailed logging for calendar queries
+        if (functionCall.name === "checkCalendar") {
+          console.log('📅 Calendar Flow:', {
+            args: functionArgs,
+            timeframe: functionArgs?.timeframe,
+            isQuery: functionArgs?.isCalendarQuery
+          });
+        }
+
+        // Add more detailed logging for image generation
+        if (functionCall.name === "generateDallEImage") {
+          console.log('🎨 Image Generation Flow:', {
+            args: functionArgs,
+            shouldGenerate: functionArgs?.shouldGenerateImage,
+            prompt: functionArgs?.imagePrompt
+          });
+        }
+
+        // Add more detailed logging for reminder queries
+        if (functionCall.name === "checkReminders") {
+          console.log('📝 Reminder Flow:', {
+            args: functionArgs,
+            timeframe: functionArgs?.timeframe,
+            isQuery: functionArgs?.isReminderQuery,
+            listType: functionArgs?.listType
+          });
+        }
+
         if (functionCall.name === "checkCalendar" && functionArgs.isCalendarQuery) {
           console.log('Calendar function called with args:', functionArgs);
           const events = await CalendarService.getEvents(functionArgs.timeframe);
@@ -860,13 +933,13 @@ export const ChatProvider = ({ children }) => {
           throw new Error('No API key available. Please set an API key in the settings.');
         }
 
-        console.log('Chat request details:', {
-          currentModel,
-          apiModel,
-          isGrok,
-          modelMap,
-          baseURL: isGrok ? "https://api.x.ai/v1" : "https://api.openai.com/v1"
-        });
+        // console.log('Chat request details:', {
+        //   currentModel,
+        //   apiModel,
+        //   isGrok,
+        //   modelMap,
+        //   baseURL: isGrok ? "https://api.x.ai/v1" : "https://api.openai.com/v1"
+        // });
 
         console.log('API Configuration:', {
           isUsingBuiltInKey: useBuiltInKey,
@@ -914,20 +987,46 @@ export const ChatProvider = ({ children }) => {
         await saveChat(updatedChat);
       }
     } catch (error) {
-      console.error('Error sending message to OpenAI:', error);
-      console.error('Error response:', error.response);
-      console.error('Error configuration:', {
+      console.log('❌ Message Flow: Error occurred', {
+        errorType: error.name,
+        errorMessage: error.message,
+        statusCode: error.response?.status,
+        errorDetails: error.response?.data,
         currentModel,
         isGrok: currentModel.toLowerCase().includes('grok'),
-        baseURL: currentModel.toLowerCase().includes('grok') ? "https://api.x.ai/v1" : "https://api.openai.com/v1",
-        modelUsed: currentModel.toLowerCase().includes('grok') ? "grok-beta" : modelMap[currentModel]
+        functionCall: functionCall ? {
+          name: functionCall.name,
+          hasArguments: !!functionCall.arguments
+        } : 'No function call',
+        state: {
+          hasChats: chats.length > 0,
+          currentChatId,
+          modelToUse
+        }
       });
-      
+
+      console.error('Error details:', {
+        stack: error.stack,
+        response: error.response,
+        configuration: {
+          currentModel,
+          isGrok: currentModel.toLowerCase().includes('grok'),
+          baseURL: currentModel.toLowerCase().includes('grok') ? "https://api.x.ai/v1" : "https://api.openai.com/v1",
+          modelUsed: currentModel.toLowerCase().includes('grok') ? "grok-beta" : modelMap[currentModel]
+        }
+      });
+
       let errorMessage = 'Sorry, I encountered an error. Please try again.';
       if (error.response?.status === 401) {
         errorMessage = 'Invalid API key. Please check your API key in the settings or enable the built-in key.';
       } else if (error.message.includes('No API key available')) {
         errorMessage = error.message;
+      } else if (error.message.includes('Cannot read property')) {
+        errorMessage = 'There was an error processing your request. Please try again.';
+        console.log('💡 Debug Info: Property access error', {
+          message: error.message,
+          stack: error.stack?.split('\n').slice(0, 3)
+        });
       }
 
       // Add error message to the chat

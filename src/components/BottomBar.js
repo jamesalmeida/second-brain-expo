@@ -29,6 +29,7 @@ const BottomBar = forwardRef((props, ref) => {
 
   const handleSend = () => {
     if (message.trim()) {
+      console.log('🚀 Message Flow: Step 1 - User submitted message:', message);
       sendMessageToOpenAI(message);
       setMessage('');
     }
