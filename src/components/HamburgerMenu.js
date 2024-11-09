@@ -1,13 +1,61 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView, StyleSheet, FlatList, Alert, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useDrawerStatus } from '@react-navigation/drawer';
+import Animated, { withTiming, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+
+const CollapsibleSection = ({ title, isExpanded, onPress, children, borderColor, textColor }) => {
+  const rotateValue = useSharedValue(isExpanded ? 180 : 0);
+  const heightValue = useSharedValue(isExpanded ? 570 : 0);
+
+  useEffect(() => {
+    rotateValue.value = withTiming(isExpanded ? 180 : 0, {
+      duration: 300,
+    });
+    heightValue.value = withTiming(isExpanded ? 570 : 0, {
+      duration: 300,
+    });
+  }, [isExpanded]);
+
+  const arrowStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ rotate: `${rotateValue.value}deg` }],
+    };
+  });
+
+  const containerStyle = useAnimatedStyle(() => {
+    return {
+      height: heightValue.value,
+      overflow: 'hidden',
+    };
+  });
+
+  return (
+    <View style={[styles.sectionContainer, { borderBottomColor: borderColor }]}>
+      <TouchableOpacity 
+        style={styles.sectionHeader} 
+        onPress={onPress}
+      >
+        <Text style={[styles.sectionTitle, { color: textColor }]}>{title}</Text>
+        <Animated.View style={arrowStyle}>
+          <Ionicons name="chevron-down" size={24} color={textColor} />
+        </Animated.View>
+      </TouchableOpacity>
+      <Animated.View style={containerStyle}>
+        <View style={styles.sectionContent}>
+          {children}
+        </View>
+      </Animated.View>
+    </View>
+  );
+};
 
 const HamburgerMenu = ({ openSettings, navigation }) => {
   const { chats, currentChatId, setCurrentChatId, deleteChat } = useChat();
   const { isDarkMode } = useTheme();
+  const [expandedSection, setExpandedSection] = useState(null);
   
   const backgroundColor = isDarkMode ? '#1c1c1e' : 'white';
   const textColor = isDarkMode ? '#ffffff' : '#000000';
@@ -20,6 +68,10 @@ const HamburgerMenu = ({ openSettings, navigation }) => {
       Keyboard.dismiss();
     }
   }, [isDrawerOpen]);
+
+  const handleSectionPress = (sectionName) => {
+    setExpandedSection(expandedSection === sectionName ? null : sectionName);
+  };
 
   const handleChatSelect = (chatId) => {
     setCurrentChatId(chatId);
@@ -44,7 +96,7 @@ const HamburgerMenu = ({ openSettings, navigation }) => {
     );
   };
 
-  const renderItem = ({ item }) => (
+  const renderChatItem = ({ item }) => (
     <View style={[styles.chatItemContainer, { borderBottomColor: borderColor }]}>
       <TouchableOpacity
         style={[
@@ -64,15 +116,49 @@ const HamburgerMenu = ({ openSettings, navigation }) => {
     </View>
   );
 
+  // console.log('--------- CHAT HISTORY START ---------');
+  // console.log(chats);
+  // console.log('--------- CHAT HISTORY END ---------');
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <FlatList
-        data={chats}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        style={styles.content}
-        contentContainerStyle={styles.listContent}
-      />
+      <View style={styles.mainContainer}>
+        <View style={styles.sectionsContainer}>
+          <CollapsibleSection
+            title="Chat History"
+            isExpanded={expandedSection === 'chatHistory'}
+            onPress={() => handleSectionPress('chatHistory')}
+            borderColor={borderColor}
+            textColor={textColor}
+          >
+            <FlatList
+              data={chats}
+              renderItem={renderChatItem}
+              keyExtractor={(item) => item.id}
+              style={styles.chatList}
+            />
+          </CollapsibleSection>
+
+          <View style={expandedSection === 'chatHistory' ? styles.spacer : null} />
+
+          <CollapsibleSection
+            title="Memories"
+            isExpanded={expandedSection === 'memories'}
+            onPress={() => handleSectionPress('memories')}
+            borderColor={borderColor}
+            textColor={textColor}
+          >
+            <View style={styles.placeholderContainer}>
+              <Text style={[styles.placeholderText, { color: textColor }]}>
+                Coming soon...
+              </Text>
+            </View>
+          </CollapsibleSection>
+          
+          <View style={expandedSection === 'memories' ? styles.spacer : null} />
+        </View>
+      </View>
+
       <TouchableOpacity
         style={[styles.settingsButton, { borderTopColor: borderColor }]}
         onPress={openSettings}
@@ -88,17 +174,44 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
+  mainContainer: {
+    flex: 1,
+    marginBottom: 80,
+  },
+  sectionsContainer: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    maxHeight: '85%',
+  },
+  spacer: {
     flex: 1,
   },
-  listContent: {
-    paddingTop: 20,
-    paddingBottom: 20,
+  sectionContainer: {
+    borderBottomWidth: 1,
+  },
+  sectionContent: {
+    height: 600,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  chatList: {
+    flex: 1,
+    width: '100%',
   },
   chatItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
+    paddingLeft: 20,
   },
   chatItem: {
     flex: 1,
@@ -118,12 +231,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderTopWidth: 1,
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    backgroundColor: 'inherit',
   },
   icon: {
     marginRight: 10,
   },
   settingsText: {
     fontSize: 16,
+  },
+  placeholderContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontStyle: 'italic',
+    opacity: 0.6,
   },
 });
 
