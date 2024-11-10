@@ -214,8 +214,8 @@ const CalendarBottomSheet = ({
                 showClosingKnob={true}
                 hideKnob={false}
                 showOnlySelectedDayItems={false}
-                pastScrollRange={1}
-                futureScrollRange={1}
+                pastScrollRange={12}
+                futureScrollRange={12}
                 refreshControl={null}
                 refreshing={false}
                 loadItemsForMonth={() => {}}
