@@ -60,6 +60,7 @@ export const CalendarService = {
             minute: '2-digit' 
           }),
           date: new Date(event.startDate).toLocaleDateString(),
+          startDate: event.startDate,
           location: event.location || 'No location specified'
         }))
         .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
