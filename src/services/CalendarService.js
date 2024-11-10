@@ -33,6 +33,10 @@ export const CalendarService = {
       } else if (timeframe === 'week') {
         endDate.setDate(endDate.getDate() + 7);
         endDate.setHours(23, 59, 59, 999);
+      } else if (timeframe === 'extended') {
+        startDate.setMonth(startDate.getMonth() - 12);
+        endDate.setMonth(endDate.getMonth() + 12);
+        endDate.setHours(23, 59, 59, 999);
       }
 
       // Get events only from visible calendars

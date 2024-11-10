@@ -29,16 +29,16 @@ const CalendarBottomSheet = ({
       
       setIsLoading(true);
       try {
-        const calendarEvents = await CalendarService.getEvents('week');
-        const formattedEvents = {};
-        
         // Get the start and end of the week
         const startDate = new Date(selectedDate);
         startDate.setDate(startDate.getDate() - 3); // 3 days before
         const endDate = new Date(selectedDate);
         endDate.setDate(endDate.getDate() + 3); // 3 days after
 
-        // Initialize all dates in the range with empty arrays
+        const calendarEvents = await CalendarService.getEvents('extended');
+        const formattedEvents = {};
+        
+        // Initialize dates in the week range
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
           const dateStr = d.toISOString().split('T')[0];
           formattedEvents[dateStr] = [];
@@ -48,22 +48,25 @@ const CalendarBottomSheet = ({
         if (Array.isArray(calendarEvents)) {
           calendarEvents.forEach(event => {
             const dateStr = new Date(event.startDate).toISOString().split('T')[0];
-            if (!formattedEvents[dateStr]) {
-              formattedEvents[dateStr] = [];
+            if (new Date(dateStr) >= startDate && new Date(dateStr) <= endDate) {
+              if (!formattedEvents[dateStr]) {
+                formattedEvents[dateStr] = [];
+              }
+              formattedEvents[dateStr].push({
+                ...event,
+                height: 80,
+                day: dateStr
+              });
             }
-            formattedEvents[dateStr].push({
-              ...event,
-              height: 80,
-              day: dateStr
-            });
           });
         }
 
-        setEvents(formattedEvents);
+        setEvents(prevEvents => ({
+          ...prevEvents,
+          ...formattedEvents
+        }));
       } catch (error) {
         console.error('Error loading events:', error);
-        // Initialize with empty events object on error
-        setEvents({});
       } finally {
         setIsLoading(false);
       }
@@ -179,6 +182,52 @@ const CalendarBottomSheet = ({
     year: 'numeric'
   });
 
+  const loadItemsForMonth = async (month) => {
+    if (!isSheetOpen) return;
+    
+    try {
+      const monthStart = new Date(month.timestamp);
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      
+      const monthEnd = new Date(monthStart);
+      monthEnd.setMonth(monthEnd.getMonth() + 1);
+      monthEnd.setDate(0);
+      monthEnd.setHours(23, 59, 59, 999);
+
+      const calendarEvents = await CalendarService.getEvents('extended');
+      const formattedEvents = {};
+
+      // Initialize the entire month with empty arrays
+      for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        formattedEvents[dateStr] = [];
+      }
+
+      // Add events if they exist
+      if (Array.isArray(calendarEvents)) {
+        calendarEvents.forEach(event => {
+          const dateStr = new Date(event.startDate).toISOString().split('T')[0];
+          if (!formattedEvents[dateStr]) {
+            formattedEvents[dateStr] = [];
+          }
+          formattedEvents[dateStr].push({
+            ...event,
+            height: 80,
+            day: dateStr
+          });
+        });
+      }
+
+      setEvents(prevEvents => ({
+        ...prevEvents,
+        ...formattedEvents
+      }));
+    } catch (error) {
+      console.error('Error loading events for month:', error);
+    }
+  };
+
   return (
     <Portal>
       <BottomSheet
@@ -218,7 +267,7 @@ const CalendarBottomSheet = ({
                 futureScrollRange={12}
                 refreshControl={null}
                 refreshing={false}
-                loadItemsForMonth={() => {}}
+                loadItemsForMonth={loadItemsForMonth}
                 style={{
                   backgroundColor: isDarkMode ? '#1c1c1e' : 'white'
                 }}
