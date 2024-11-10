@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Portal } from '@gorhom/portal';
-import { Calendar, Agenda } from 'react-native-calendars';
+import { Agenda } from 'react-native-calendars';
 import { CalendarService } from '../services/CalendarService';
 
 const CalendarBottomSheet = ({ 
@@ -69,12 +69,6 @@ const CalendarBottomSheet = ({
   };
 
   const formattedDate = selectedDate.toISOString().split('T')[0];
-  const markedDates = {
-    [formattedDate]: {
-      selected: true,
-      selectedColor: '#007AFF',
-    }
-  };
 
   const renderItem = (item) => {
     return (
