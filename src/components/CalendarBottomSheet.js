@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Portal } from '@gorhom/portal';
-import { Agenda } from 'react-native-calendars';
+import { Calendar, Agenda } from 'react-native-calendars';
 import { CalendarService } from '../services/CalendarService';
 
 const CalendarBottomSheet = ({ 
@@ -14,29 +14,62 @@ const CalendarBottomSheet = ({
   setSelectedDate 
 }) => {
   const [events, setEvents] = useState({});
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleChange = useCallback((index) => {
+    setIsSheetOpen(index === 0);
+    handleSheetChanges(index);
+  }, [handleSheetChanges]);
 
   useEffect(() => {
     const loadEvents = async () => {
-      const calendarEvents = await CalendarService.getEvents('week');
-      if (Array.isArray(calendarEvents)) {
+      if (!isSheetOpen) return;
+      
+      setIsLoading(true);
+      try {
+        const calendarEvents = await CalendarService.getEvents('week');
         const formattedEvents = {};
-        calendarEvents.forEach(event => {
-          const dateStr = new Date(event.startDate).toISOString().split('T')[0];
-          if (!formattedEvents[dateStr]) {
-            formattedEvents[dateStr] = [];
-          }
-          formattedEvents[dateStr].push({
-            ...event,
-            height: 80,
-            day: dateStr
+        
+        // Get the start and end of the week
+        const startDate = new Date(selectedDate);
+        startDate.setDate(startDate.getDate() - 3); // 3 days before
+        const endDate = new Date(selectedDate);
+        endDate.setDate(endDate.getDate() + 3); // 3 days after
+
+        // Initialize all dates in the range with empty arrays
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+          const dateStr = d.toISOString().split('T')[0];
+          formattedEvents[dateStr] = [];
+        }
+
+        // Add events if they exist
+        if (Array.isArray(calendarEvents)) {
+          calendarEvents.forEach(event => {
+            const dateStr = new Date(event.startDate).toISOString().split('T')[0];
+            if (!formattedEvents[dateStr]) {
+              formattedEvents[dateStr] = [];
+            }
+            formattedEvents[dateStr].push({
+              ...event,
+              height: 80,
+              day: dateStr
+            });
           });
-        });
+        }
+
         setEvents(formattedEvents);
+      } catch (error) {
+        console.error('Error loading events:', error);
+        // Initialize with empty events object on error
+        setEvents({});
+      } finally {
+        setIsLoading(false);
       }
     };
     
     loadEvents();
-  }, [selectedDate]);
+  }, [selectedDate, isSheetOpen]);
 
   const renderBackdrop = props => (
     <BottomSheetBackdrop
@@ -69,6 +102,13 @@ const CalendarBottomSheet = ({
   };
 
   const formattedDate = selectedDate.toISOString().split('T')[0];
+  const markedDates = {
+    [formattedDate]: {
+      selected: true,
+      selectedColor: '#007AFF',
+    }
+  };
+
 
   const renderItem = (item) => {
     return (
@@ -104,28 +144,35 @@ const CalendarBottomSheet = ({
         ref={bottomSheetRef}
         index={-1}
         snapPoints={snapPoints}
-        onChange={handleSheetChanges}
+        onChange={handleChange}
         enablePanDownToClose={true}
         backdropComponent={renderBackdrop}
         handleIndicatorStyle={{ backgroundColor: isDarkMode ? '#ffffff' : '#000000' }}
         backgroundStyle={{ backgroundColor: isDarkMode ? '#1c1c1e' : 'white' }}
       >
         <BottomSheetView style={styles.container}>
-          <Agenda
-            theme={calendarTheme}
-            items={events}
-            selected={formattedDate}
-            renderItem={renderItem}
-            renderEmptyDate={renderEmptyDate}
-            onDayPress={(day) => {
-              const [year, month, date] = day.dateString.split('-');
-              const newDate = new Date(year, month - 1, date);
-              setSelectedDate(newDate);
-            }}
-            showClosingKnob={true}
-            hideKnob={false}
-            showOnlySelectedDayItems={false}
-          />
+          {isSheetOpen && (
+            <Agenda
+              theme={calendarTheme}
+              items={events}
+              selected={formattedDate}
+              renderItem={renderItem}
+              renderEmptyDate={renderEmptyDate}
+              onDayPress={(day) => {
+                const [year, month, date] = day.dateString.split('-');
+                const newDate = new Date(year, month - 1, date);
+                setSelectedDate(newDate);
+              }}
+              showClosingKnob={true}
+              hideKnob={false}
+              showOnlySelectedDayItems={false}
+              pastScrollRange={1}
+              futureScrollRange={1}
+              refreshControl={null}
+              refreshing={false}
+              loadItemsForMonth={() => {}}
+            />
+          )}
         </BottomSheetView>
       </BottomSheet>
     </Portal>
