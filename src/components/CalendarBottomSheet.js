@@ -18,22 +18,10 @@ const CalendarBottomSheet = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = useCallback((index) => {
+    console.log('Calendar sheet index changed:', index);
     setIsSheetOpen(index === 0);
-    if (index === 0) {
-      // When sheet opens, ensure we're using the correct date
-      const today = new Date();
-      const selectedDateStart = new Date(selectedDate);
-      selectedDateStart.setHours(0, 0, 0, 0);
-      const todayStart = new Date(today);
-      todayStart.setHours(0, 0, 0, 0);
-
-      // If dates don't match, update to the correct date
-      if (selectedDateStart.getTime() !== todayStart.getTime()) {
-        setSelectedDate(today);
-      }
-    }
     handleSheetChanges(index);
-  }, [handleSheetChanges, selectedDate, setSelectedDate]);
+  }, [handleSheetChanges]);
 
   useEffect(() => {
     const loadEvents = async () => {
@@ -99,7 +87,7 @@ const CalendarBottomSheet = ({
     textSectionTitleDisabledColor: isDarkMode ? '#444444' : '#d9e1e8',
     selectedDayBackgroundColor: '#007AFF',
     selectedDayTextColor: '#ffffff',
-    todayTextColor: '#007AFF',
+    todayTextColor: '#007AFF', // today's number in the calendar week view
     dayTextColor: isDarkMode ? '#ffffff' : '#2d4150',
     textDisabledColor: isDarkMode ? '#444444' : '#d9e1e8',
     dotColor: '#007AFF',
@@ -110,33 +98,53 @@ const CalendarBottomSheet = ({
     indicatorColor: isDarkMode ? '#ffffff' : '#000000',
     agendaDayTextColor: isDarkMode ? '#ffffff' : '#2d4150',
     agendaDayNumColor: isDarkMode ? '#ffffff' : '#2d4150',
-    agendaTodayColor: '#007AFF',
-    agendaKnobColor: isDarkMode ? '#ffffff' : '#2d4150',
-    textDefaultColor: isDarkMode ? '#ffffff' : '#2d4150',
+    agendaTodayColor: isDarkMode ? '#007AFF' : '#c91224', // Today's number in the agenda list
+    textDayFontWeight: '400', // Numbers in the calendar week view
+    textDayHeaderFontWeight: '400', // DOW in the calendar week view
+    // todayTextFontWeight: '800', // ???
+    'stylesheet.agenda.main': {
+      // Add custom styling for today's text
+      todayText: {
+        fontWeight: '800', // Make today's date bold
+        color: isDarkMode ? '#007AFF' : '#c91224',
+      }
+    },
     reservationsBackgroundColor: isDarkMode ? '#1c1c1e' : 'white',
     selectedDotColor: '#007AFF',
     dotColor: '#007AFF',
-    todayBackgroundColor: isDarkMode ? '#2c2c2e' : '#e3e3e3',
-    agenda: {
-      backgroundColor: isDarkMode ? '#1c1c1e' : 'white',
-      reservationsBackgroundColor: isDarkMode ? '#1c1c1e' : 'white',
-      selectedDayBackgroundColor: '#007AFF',
-      dayTextColor: isDarkMode ? '#ffffff' : '#2d4150',
-      todayTextColor: '#007AFF',
-      dotColor: '#007AFF',
-      selectedDotColor: '#ffffff',
-      monthTextColor: isDarkMode ? '#ffffff' : '#000000'
-    }
+    todayBackgroundColor: isDarkMode ? '#2c2c2e' : '#e3e3e3'
+    // agenda: {
+    //   backgroundColor: isDarkMode ? '#1c1c1e' : 'white',
+    //   reservationsBackgroundColor: isDarkMode ? '#1c1c1e' : 'white',
+    //   selectedDayBackgroundColor: '#007AFF',
+    //   dayTextColor: isDarkMode ? '#ffffff' : '#2d4150',
+    //   todayTextColor: '#007AFF',
+    //   dotColor: '#007AFF',
+    //   selectedDotColor: '#ffffff',
+    //   monthTextColor: isDarkMode ? '#ffffff' : '#000000'
+    // }
   };
 
   const formattedDate = selectedDate.toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0];
   const markedDates = {
     [formattedDate]: {
       selected: true,
       selectedColor: '#007AFF',
+    },
+    [today]: {
+      marked: true,
+      dotColor: '#007AFF'
     }
   };
 
+  // If today is the selected date, merge the properties
+  if (today === formattedDate) {
+    markedDates[today] = {
+      ...markedDates[today],
+      ...markedDates[formattedDate]
+    };
+  }
 
   const renderItem = (item) => {
     return (
@@ -202,6 +210,7 @@ const CalendarBottomSheet = ({
               style={{
                 backgroundColor: isDarkMode ? '#1c1c1e' : 'white'
               }}
+              markedDates={markedDates}
             />
           )}
         </BottomSheetView>
