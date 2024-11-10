@@ -27,6 +27,18 @@ const Header = ({ navigation }) => {
     console.log('handleSheetChanges', index);
   };
 
+  const handleNewChat = () => {
+    // Update selected date to current date if it's different
+    const currentDate = new Date();
+    const currentDateString = currentDate.toDateString();
+    const selectedDateString = selectedDate.toDateString();
+
+    if (currentDateString !== selectedDateString) {
+      setSelectedDate(currentDate);
+    }
+    createNewChat();
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: isDarkMode ? 'black' : 'white' }]}>
       <TouchableOpacity onPress={() => navigation.openDrawer()}>
@@ -46,7 +58,7 @@ const Header = ({ navigation }) => {
           {formattedDate}
         </Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={createNewChat}>
+      <TouchableOpacity onPress={handleNewChat}>
         <Ionicons name="add" size={24} color={isDarkMode ? 'white' : 'black'} />
       </TouchableOpacity>
 

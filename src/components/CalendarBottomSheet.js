@@ -19,8 +19,21 @@ const CalendarBottomSheet = ({
 
   const handleChange = useCallback((index) => {
     setIsSheetOpen(index === 0);
+    if (index === 0) {
+      // When sheet opens, ensure we're using the correct date
+      const today = new Date();
+      const selectedDateStart = new Date(selectedDate);
+      selectedDateStart.setHours(0, 0, 0, 0);
+      const todayStart = new Date(today);
+      todayStart.setHours(0, 0, 0, 0);
+
+      // If dates don't match, update to the correct date
+      if (selectedDateStart.getTime() !== todayStart.getTime()) {
+        setSelectedDate(today);
+      }
+    }
     handleSheetChanges(index);
-  }, [handleSheetChanges]);
+  }, [handleSheetChanges, selectedDate, setSelectedDate]);
 
   useEffect(() => {
     const loadEvents = async () => {
