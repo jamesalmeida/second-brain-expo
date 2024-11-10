@@ -10,7 +10,9 @@ const Header = ({ navigation }) => {
   const { isDarkMode } = useTheme();
   const dateBottomSheetRef = useRef(null);
   const snapPoints = ['88%'];
-  const currentDate = new Date().toLocaleDateString('en-US', {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const formattedDate = selectedDate.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric'
@@ -40,7 +42,9 @@ const Header = ({ navigation }) => {
           color={isDarkMode ? 'white' : 'black'} 
           style={styles.calendarIcon}
         />
-        <Text style={[styles.dateText, { color: isDarkMode ? 'white' : 'black' }]}>{currentDate}</Text>
+        <Text style={[styles.dateText, { color: isDarkMode ? 'white' : 'black' }]}>
+          {formattedDate}
+        </Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={createNewChat}>
         <Ionicons name="add" size={24} color={isDarkMode ? 'white' : 'black'} />
@@ -51,6 +55,8 @@ const Header = ({ navigation }) => {
         snapPoints={snapPoints}
         handleSheetChanges={handleSheetChanges}
         isDarkMode={isDarkMode}
+        selectedDate={selectedDate}
+        setSelectedDate={setSelectedDate}
       />
     </View>
   );

@@ -4,7 +4,14 @@ import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/botto
 import { Portal } from '@gorhom/portal';
 import { Calendar } from 'react-native-calendars';
 
-const CalendarBottomSheet = ({ bottomSheetRef, snapPoints, handleSheetChanges, isDarkMode }) => {
+const CalendarBottomSheet = ({ 
+  bottomSheetRef, 
+  snapPoints, 
+  handleSheetChanges, 
+  isDarkMode,
+  selectedDate,
+  setSelectedDate 
+}) => {
   const renderBackdrop = props => (
     <BottomSheetBackdrop
       {...props}
@@ -31,6 +38,15 @@ const CalendarBottomSheet = ({ bottomSheetRef, snapPoints, handleSheetChanges, i
     indicatorColor: isDarkMode ? '#ffffff' : '#000000',
   };
 
+  // Format date for the calendar marking
+  const formattedDate = selectedDate.toISOString().split('T')[0];
+  const markedDates = {
+    [formattedDate]: {
+      selected: true,
+      selectedColor: '#007AFF',
+    }
+  };
+
   return (
     <Portal>
       <BottomSheet
@@ -47,11 +63,14 @@ const CalendarBottomSheet = ({ bottomSheetRef, snapPoints, handleSheetChanges, i
           <Calendar
             theme={calendarTheme}
             onDayPress={(day) => {
-              console.log('selected day', day);
-              // Handle day selection here
+              const [year, month, date] = day.dateString.split('-');
+              const newDate = new Date(year, month - 1, date);
+              setSelectedDate(newDate);
+              bottomSheetRef.current?.close();
             }}
             enableSwipeMonths={true}
-            current={new Date().toISOString().split('T')[0]}
+            current={formattedDate}
+            markedDates={markedDates}
           />
         </BottomSheetView>
       </BottomSheet>
