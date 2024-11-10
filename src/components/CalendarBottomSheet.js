@@ -7,7 +7,7 @@ import { CalendarService } from '../services/CalendarService';
 
 const CalendarBottomSheet = ({ 
   bottomSheetRef, 
-  snapPoints, 
+  snapPoints,
   handleSheetChanges, 
   isDarkMode,
   selectedDate,
@@ -174,6 +174,11 @@ const CalendarBottomSheet = ({
     );
   };
 
+  const formattedMonth = selectedDate.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric'
+  });
+
   return (
     <Portal>
       <BottomSheet
@@ -188,30 +193,38 @@ const CalendarBottomSheet = ({
       >
         <BottomSheetView style={styles.container}>
           {isSheetOpen && (
-            <Agenda
-              theme={calendarTheme}
-              items={events}
-              selected={formattedDate}
-              renderItem={renderItem}
-              renderEmptyDate={renderEmptyDate}
-              onDayPress={(day) => {
-                const [year, month, date] = day.dateString.split('-');
-                const newDate = new Date(year, month - 1, date);
-                setSelectedDate(newDate);
-              }}
-              showClosingKnob={true}
-              hideKnob={false}
-              showOnlySelectedDayItems={false}
-              pastScrollRange={1}
-              futureScrollRange={1}
-              refreshControl={null}
-              refreshing={false}
-              loadItemsForMonth={() => {}}
-              style={{
-                backgroundColor: isDarkMode ? '#1c1c1e' : 'white'
-              }}
-              markedDates={markedDates}
-            />
+            <>
+              <Text style={[
+                styles.monthHeader, 
+                { color: isDarkMode ? '#ffffff' : '#000000' }
+              ]}>
+                {formattedMonth}
+              </Text>
+              <Agenda
+                theme={calendarTheme}
+                items={events}
+                selected={formattedDate}
+                renderItem={renderItem}
+                renderEmptyDate={renderEmptyDate}
+                onDayPress={(day) => {
+                  const [year, month, date] = day.dateString.split('-');
+                  const newDate = new Date(year, month - 1, date);
+                  setSelectedDate(newDate);
+                }}
+                showClosingKnob={true}
+                hideKnob={false}
+                showOnlySelectedDayItems={false}
+                pastScrollRange={1}
+                futureScrollRange={1}
+                refreshControl={null}
+                refreshing={false}
+                loadItemsForMonth={() => {}}
+                style={{
+                  backgroundColor: isDarkMode ? '#1c1c1e' : 'white'
+                }}
+                markedDates={markedDates}
+              />
+            </>
           )}
         </BottomSheetView>
       </BottomSheet>
@@ -222,6 +235,12 @@ const CalendarBottomSheet = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  monthHeader: {
+    fontSize: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingVertical: 12,
   },
   item: {
     padding: 15,

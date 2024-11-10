@@ -9,14 +9,14 @@ const Header = ({ navigation }) => {
   const { createNewChat } = useChat();
   const { isDarkMode } = useTheme();
   const dateBottomSheetRef = useRef(null);
-  const snapPoints = ['88%'];
+  const calendarSnapPoints = ['93%'];
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const formattedDate = selectedDate.toLocaleDateString('en-US', {
-    month: 'long',
+    month: 'short',
     day: 'numeric',
     year: 'numeric'
-  });
+  }).replace(/^([A-Za-z]+)/, match => match.toUpperCase()); // Capitalize the month
 
   const handleOpenDateSheet = () => {
     Keyboard.dismiss();
@@ -46,14 +46,17 @@ const Header = ({ navigation }) => {
       </TouchableOpacity>
       <TouchableOpacity 
         onPress={handleOpenDateSheet}
-        style={styles.modelSelector}
+        style={[
+          styles.modelSelector,
+          { backgroundColor: isDarkMode ? '#333' : '#f0f0f0' }
+        ]}
       >
-        <Ionicons 
+        {/* <Ionicons />
           name="calendar-outline" 
           size={20} 
           color={isDarkMode ? 'white' : 'black'} 
           style={styles.calendarIcon}
-        />
+        /> // Unsure about this icon here. Might leave it out but keeping it commented for now. */}
         <Text style={[styles.dateText, { color: isDarkMode ? 'white' : 'black' }]}>
           {formattedDate}
         </Text>
@@ -64,7 +67,7 @@ const Header = ({ navigation }) => {
 
       <CalendarBottomSheet
         bottomSheetRef={dateBottomSheetRef}
-        snapPoints={snapPoints}
+        snapPoints={calendarSnapPoints}
         handleSheetChanges={handleSheetChanges}
         isDarkMode={isDarkMode}
         selectedDate={selectedDate}
@@ -84,12 +87,16 @@ const styles = StyleSheet.create({
   modelSelector: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   dateText: {
-    marginRight: 5,
+    // marginLeft: 6,
+    fontSize: 16,
   },
   calendarIcon: {
-    paddingRight: 5,
+    marginRight: 2,
   },
 });
 
