@@ -111,7 +111,22 @@ const CalendarBottomSheet = ({
     agendaDayTextColor: isDarkMode ? '#ffffff' : '#2d4150',
     agendaDayNumColor: isDarkMode ? '#ffffff' : '#2d4150',
     agendaTodayColor: '#007AFF',
-    agendaKnobColor: isDarkMode ? '#ffffff' : '#2d4150'
+    agendaKnobColor: isDarkMode ? '#ffffff' : '#2d4150',
+    textDefaultColor: isDarkMode ? '#ffffff' : '#2d4150',
+    reservationsBackgroundColor: isDarkMode ? '#1c1c1e' : 'white',
+    selectedDotColor: '#007AFF',
+    dotColor: '#007AFF',
+    todayBackgroundColor: isDarkMode ? '#2c2c2e' : '#e3e3e3',
+    agenda: {
+      backgroundColor: isDarkMode ? '#1c1c1e' : 'white',
+      reservationsBackgroundColor: isDarkMode ? '#1c1c1e' : 'white',
+      selectedDayBackgroundColor: '#007AFF',
+      dayTextColor: isDarkMode ? '#ffffff' : '#2d4150',
+      todayTextColor: '#007AFF',
+      dotColor: '#007AFF',
+      selectedDotColor: '#ffffff',
+      monthTextColor: isDarkMode ? '#ffffff' : '#000000'
+    }
   };
 
   const formattedDate = selectedDate.toISOString().split('T')[0];
@@ -184,6 +199,9 @@ const CalendarBottomSheet = ({
               refreshControl={null}
               refreshing={false}
               loadItemsForMonth={() => {}}
+              style={{
+                backgroundColor: isDarkMode ? '#1c1c1e' : 'white'
+              }}
             />
           )}
         </BottomSheetView>
