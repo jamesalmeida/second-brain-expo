@@ -6,7 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useDrawerStatus } from '@react-navigation/drawer';
 import Animated, { withTiming, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 
-const CollapsibleSection = ({ title, isExpanded, onPress, children, borderColor, textColor }) => {
+const CollapsibleSection = ({ title, isExpanded, onPress, children, borderColor, textColor, icon }) => {
   const rotateValue = useSharedValue(isExpanded ? 180 : 0);
   const heightValue = useSharedValue(isExpanded ? 570 : 0);
 
@@ -38,7 +38,8 @@ const CollapsibleSection = ({ title, isExpanded, onPress, children, borderColor,
         style={styles.sectionHeader} 
         onPress={onPress}
       >
-        <Text style={[styles.sectionTitle, { color: textColor }]}>{title}</Text>
+        {icon}
+        <Text style={[styles.sectionTitle, { color: textColor, marginLeft: 10 }]}>{title}</Text>
         <Animated.View style={arrowStyle}>
           <Ionicons name="chevron-down" size={24} color={textColor} />
         </Animated.View>
@@ -124,13 +125,13 @@ const HamburgerMenu = ({ openSettings, navigation }) => {
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
       <View style={styles.mainContainer}>
         <View style={styles.sectionsContainer}>
-          <Ionicons name="chatbubbles-outline" size={24} color={textColor} />
           <CollapsibleSection
             title="Chat History"
             isExpanded={expandedSection === 'chatHistory'}
             onPress={() => handleSectionPress('chatHistory')}
             borderColor={borderColor}
             textColor={textColor}
+            icon={<Ionicons name="chatbubbles-outline" size={24} color={textColor} />}
           >
             <FlatList
               data={chats}
@@ -142,13 +143,13 @@ const HamburgerMenu = ({ openSettings, navigation }) => {
 
           <View style={expandedSection === 'chatHistory' ? styles.spacer : null} />
 
-          <Ionicons name="cube-outline" size={24} color={textColor} />
           <CollapsibleSection
             title="Memories"
             isExpanded={expandedSection === 'memories'}
             onPress={() => handleSectionPress('memories')}
             borderColor={borderColor}
             textColor={textColor}
+            icon={<Ionicons name="cube-outline" size={24} color={textColor} />}
           >
             <View style={styles.placeholderContainer}>
               <Text style={[styles.placeholderText, { color: textColor }]}>
@@ -197,13 +198,13 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '500',
+    flex: 1,
   },
   chatList: {
     flex: 1,
