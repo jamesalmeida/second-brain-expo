@@ -112,7 +112,7 @@ const ChatOptionsSheet = memo(({ bottomSheetRef, snapPoints, handleSheetChanges 
               <Ionicons name="chevron-forward" size={24} color={textColor} style={styles.chevron} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.option} onPress={slideToModels}>
-              <Ionicons name="document-outline" size={24} color={textColor} />
+              <Ionicons name="document-attach-outline" size={24} color={textColor} />
               <Text style={[styles.optionText, { color: textColor }]}>Attach File</Text>
               <Ionicons name="chevron-forward" size={24} color={textColor} style={styles.chevron} />
             </TouchableOpacity>

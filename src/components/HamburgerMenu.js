@@ -124,6 +124,7 @@ const HamburgerMenu = ({ openSettings, navigation }) => {
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
       <View style={styles.mainContainer}>
         <View style={styles.sectionsContainer}>
+          <Ionicons name="chatbubbles-outline" size={24} color={textColor} />
           <CollapsibleSection
             title="Chat History"
             isExpanded={expandedSection === 'chatHistory'}
@@ -141,6 +142,7 @@ const HamburgerMenu = ({ openSettings, navigation }) => {
 
           <View style={expandedSection === 'chatHistory' ? styles.spacer : null} />
 
+          <Ionicons name="cube-outline" size={24} color={textColor} />
           <CollapsibleSection
             title="Memories"
             isExpanded={expandedSection === 'memories'}

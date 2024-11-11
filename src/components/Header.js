@@ -51,18 +51,12 @@ const Header = ({ navigation }) => {
           { backgroundColor: isDarkMode ? '#333' : '#f0f0f0' }
         ]}
       >
-        {/* <Ionicons />
-          name="calendar-outline" 
-          size={20} 
-          color={isDarkMode ? 'white' : 'black'} 
-          style={styles.calendarIcon}
-        /> // Unsure about this icon here. Might leave it out but keeping it commented for now. */}
         <Text style={[styles.dateText, { color: isDarkMode ? 'white' : 'black' }]}>
           {formattedDate}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={handleNewChat}>
-        <Ionicons name="add" size={24} color={isDarkMode ? 'white' : 'black'} />
+        <Ionicons name="create-outline" size={24} color={isDarkMode ? 'white' : 'black'} />
       </TouchableOpacity>
 
       <CalendarBottomSheet
