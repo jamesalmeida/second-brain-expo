@@ -4,6 +4,7 @@ import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/botto
 import { Portal } from '@gorhom/portal';
 import { Calendar, Agenda } from 'react-native-calendars';
 import { CalendarService } from '../services/CalendarService';
+import { Ionicons } from '@expo/vector-icons';
 
 const CalendarBottomSheet = ({ 
   bottomSheetRef, 
@@ -243,12 +244,26 @@ const CalendarBottomSheet = ({
         <BottomSheetView style={styles.container}>
           {isSheetOpen && (
             <>
-              <Text style={[
-                styles.monthHeader, 
-                { color: isDarkMode ? '#ffffff' : '#000000' }
-              ]}>
-                {formattedMonth}
-              </Text>
+              <View style={styles.headerContainer}>
+                <Ionicons
+                  name="today-outline" 
+                  size={24} 
+                  color={isDarkMode ? 'white' : 'black'} 
+                  onPress={() => setSelectedDate(new Date())}
+                />
+                <Text style={[
+                  styles.monthHeader, 
+                  { color: isDarkMode ? '#ffffff' : '#000000' }
+                ]}>
+                  {formattedMonth}
+                </Text>
+                <Ionicons
+                  name="close-circle-outline" 
+                  size={24} 
+                  color={isDarkMode ? 'white' : 'black'}
+                  onPress={() => bottomSheetRef.current?.close()} 
+                />
+              </View>
               <Agenda
                 theme={calendarTheme}
                 items={events}
@@ -285,11 +300,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   monthHeader: {
     fontSize: 20,
     fontWeight: '600',
-    textAlign: 'center',
-    paddingVertical: 12,
   },
   item: {
     padding: 15,
