@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Switch, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
+import { View, Text, Switch, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SettingsNestedMenu from './SettingsNestedMenu';
 import SelectCalendars from './SelectCalendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment-timezone';
 import TimezoneSelector from './TimezoneSelector';
+import { CalendarService } from '../../services/CalendarService';
 
 const CalendarSettings = ({ 
   isDarkMode,
@@ -19,15 +20,30 @@ const CalendarSettings = ({
 }) => {
   const [currentMenu, setCurrentMenu] = useState('main');
   const [selectedTimezone, setSelectedTimezone] = useState('');
+  const [calendarCount, setCalendarCount] = useState({ active: 0, total: 0 });
 
   useEffect(() => {
-    const loadTimezone = async () => {
+    const loadSettings = async () => {
+      // Load timezone
       const saved = await AsyncStorage.getItem('selectedTimezone');
       setSelectedTimezone(saved || moment.tz.guess());
+
+      // Load calendar counts
+      const calendars = await CalendarService.getCalendars();
+      const savedVisibility = await AsyncStorage.getItem('calendar_visibility');
+      const visibilitySettings = savedVisibility ? JSON.parse(savedVisibility) : {};
+      
+      const totalCalendars = calendars.length;
+      const activeCalendars = calendars.filter(cal => visibilitySettings[cal.id] !== false).length;
+      
+      setCalendarCount({
+        active: activeCalendars,
+        total: totalCalendars
+      });
     };
     
-    loadTimezone();
-  }, []);
+    loadSettings();
+  }, [currentMenu]); // Reload when returning from submenus
 
   const handleTimezoneChange = (newTimezone) => {
     setSelectedTimezone(newTimezone);
@@ -92,7 +108,12 @@ const CalendarSettings = ({
             onPress={() => setCurrentMenu('selectCalendars')}
           >
             <Text style={{ color: textColor }}>Select Calendars</Text>
-            <Ionicons name="chevron-forward" size={24} color={textColor} />
+            <View style={styles.settingItemContent}>
+              <Text style={{ color: isDarkMode ? '#666666' : '#999999' }}>
+                {calendarCount.active} of {calendarCount.total} calendars active
+              </Text>
+              <Ionicons name="chevron-forward" size={24} color={textColor} />
+            </View>
           </TouchableOpacity>
         )}
 
@@ -148,26 +169,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  option: {
-    padding: 15,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#cccccc',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  optionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  optionText: {
-    fontSize: 16,
-  },
-  optionDetail: {
-    fontSize: 14,
-  },
+  }
 });
 
 export default CalendarSettings;

@@ -151,5 +151,36 @@ export const CalendarService = {
       console.error('Error fetching calendars:', error);
       return { error: 'Failed to fetch calendars' };
     }
+  },
+
+  getSelectedCalendars: async () => {
+    try {
+      // Get all available calendars
+      const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+      
+      // Get saved calendar selections from AsyncStorage
+      const savedSelectionsStr = await AsyncStorage.getItem('selectedCalendars');
+      const savedSelections = savedSelectionsStr ? JSON.parse(savedSelectionsStr) : {};
+      
+      // Map calendars with their selection status
+      return calendars.map(calendar => ({
+        id: calendar.id,
+        title: calendar.title,
+        color: calendar.color,
+        source: calendar.source,
+        selected: savedSelections[calendar.id] !== false // default to true if not saved
+      }));
+    } catch (error) {
+      console.error('Error getting selected calendars:', error);
+      return [];
+    }
+  },
+
+  saveSelectedCalendars: async (selections) => {
+    try {
+      await AsyncStorage.setItem('selectedCalendars', JSON.stringify(selections));
+    } catch (error) {
+      console.error('Error saving calendar selections:', error);
+    }
   }
 };
