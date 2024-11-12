@@ -1,10 +1,11 @@
-import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useCallback, useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Portal } from '@gorhom/portal';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import moment from 'moment-timezone';
+import ChatImageGallery from './ChatImageGallery';
 
 const InfoRow = ({ label, value, icon, isDarkMode }) => (
   <View style={styles.infoRow}>
@@ -23,6 +24,9 @@ const ChatInfoSheet = ({
 }) => {
   const { chats, currentChatId, currentModel } = useChat();
   const currentChat = chats.find(chat => chat.id === currentChatId);
+
+  const [showGallery, setShowGallery] = useState(false);
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   const renderBackdrop = useCallback(
     props => (
@@ -62,6 +66,30 @@ const ChatInfoSheet = ({
   const stats = calculateChatStats();
   if (!stats) return null;
 
+  const showGalleryView = () => {
+    setShowGallery(true);
+    Animated.timing(slideAnim, {
+      toValue: -400, // Adjust based on your needs
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const hideGalleryView = () => {
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => setShowGallery(false));
+  };
+
+  const getImagesFromChat = () => {
+    if (!currentChat?.messages) return [];
+    return currentChat.messages.filter(m => 
+      m.role === 'assistant' && m.content.includes('<img')
+    );
+  };
+
   return (
     <Portal>
       <BottomSheet
@@ -88,73 +116,101 @@ const ChatInfoSheet = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.content}>
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: isDarkMode ? '#fff' : '#000' }]}>
-                Overview
-              </Text>
-              <InfoRow 
-                label="Date" 
-                value={moment(selectedDate).format('MMMM D, YYYY')}
-                icon="calendar-outline"
-                isDarkMode={isDarkMode}
-              />
-              <InfoRow 
-                label="Total Messages" 
-                value={stats.totalMessages}
-                icon="chatbubbles-outline"
-                isDarkMode={isDarkMode}
-              />
-              <InfoRow 
-                label="Your Messages" 
-                value={stats.userMessages}
-                icon="person-outline"
-                isDarkMode={isDarkMode}
-              />
-              <InfoRow 
-                label="AI Responses" 
-                value={stats.aiMessages}
-                icon="hardware-chip-outline"
-                isDarkMode={isDarkMode}
-              />
-            </View>
+          <Animated.View style={[
+            styles.infoContainer,
+            { transform: [{ translateX: slideAnim }] }
+          ]}>
+            <ScrollView style={styles.content}>
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? '#fff' : '#000' }]}>
+                  Overview
+                </Text>
+                <InfoRow 
+                  label="Date" 
+                  value={moment(selectedDate).format('MMMM D, YYYY')}
+                  icon="calendar-outline"
+                  isDarkMode={isDarkMode}
+                />
+                <InfoRow 
+                  label="Total Messages" 
+                  value={stats.totalMessages}
+                  icon="chatbubbles-outline"
+                  isDarkMode={isDarkMode}
+                />
+                <InfoRow 
+                  label="Your Messages" 
+                  value={stats.userMessages}
+                  icon="person-outline"
+                  isDarkMode={isDarkMode}
+                />
+                <InfoRow 
+                  label="AI Responses" 
+                  value={stats.aiMessages}
+                  icon="hardware-chip-outline"
+                  isDarkMode={isDarkMode}
+                />
+              </View>
 
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: isDarkMode ? '#fff' : '#000' }]}>
-                Content
-              </Text>
-              <InfoRow 
-                label="Total Words" 
-                value={stats.totalWords}
-                icon="text-outline"
-                isDarkMode={isDarkMode}
-              />
-              <InfoRow 
-                label="Images Generated" 
-                value={stats.imageCount}
-                icon="image-outline"
-                isDarkMode={isDarkMode}
-              />
-            </View>
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? '#fff' : '#000' }]}>
+                  Content
+                </Text>
+                <InfoRow 
+                  label="Total Words" 
+                  value={stats.totalWords}
+                  icon="text-outline"
+                  isDarkMode={isDarkMode}
+                />
+                <TouchableOpacity onPress={showGalleryView}>
+                  <InfoRow 
+                    label="Images Generated" 
+                    value={`${stats.imageCount} ›`}
+                    icon="image-outline"
+                    isDarkMode={isDarkMode}
+                  />
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: isDarkMode ? '#fff' : '#000' }]}>
-                Technical Details
-              </Text>
-              <InfoRow 
-                label="Chat ID" 
-                value={currentChatId}
-                icon="key-outline"
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? '#fff' : '#000' }]}>
+                  Technical Details
+                </Text>
+                <InfoRow 
+                  label="Chat ID" 
+                  value={currentChatId}
+                  icon="key-outline"
+                  isDarkMode={isDarkMode}
+                />
+                <InfoRow 
+                  label="AI Model" 
+                  value={currentModel}
+                  icon="git-branch-outline"
+                  isDarkMode={isDarkMode}
+                />
+              </View>
+            </ScrollView>
+          </Animated.View>
+
+          <Animated.View style={[
+            styles.galleryContainer,
+            { 
+              transform: [{ translateX: Animated.add(slideAnim, 400) }],
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: isDarkMode ? '#1c1c1e' : 'white'
+            }
+          ]}>
+            {showGallery && (
+              <ChatImageGallery
+                images={getImagesFromChat()}
                 isDarkMode={isDarkMode}
+                onClose={hideGalleryView}
               />
-              <InfoRow 
-                label="AI Model" 
-                value={currentModel}
-                icon="git-branch-outline"
-                isDarkMode={isDarkMode}
-              />
-            </View>
-          </ScrollView>
+            )}
+          </Animated.View>
         </BottomSheetView>
       </BottomSheet>
     </Portal>
@@ -207,6 +263,12 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  infoContainer: {
+    flex: 1,
+  },
+  galleryContainer: {
+    flex: 1,
   },
 });
 
