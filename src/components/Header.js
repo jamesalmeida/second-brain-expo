@@ -1,22 +1,33 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import { useTheme } from '../contexts/ThemeContext';
 import CalendarBottomSheet from './CalendarBottomSheet';
+import moment from 'moment-timezone';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const Header = ({ navigation }) => {
+const Header = ({ navigation, selectedDate, setSelectedDate }) => {
   const { createNewChat } = useChat();
   const { isDarkMode } = useTheme();
   const dateBottomSheetRef = useRef(null);
   const calendarSnapPoints = ['93%'];
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [timezone, setTimezone] = useState(moment.tz.guess());
 
-  const formattedDate = selectedDate.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }).replace(/^([A-Za-z]+)/, match => match.toUpperCase()); // Capitalize the month
+  useEffect(() => {
+    const loadTimezone = async () => {
+      const savedTimezone = await AsyncStorage.getItem('selectedTimezone');
+      if (savedTimezone) {
+        setTimezone(savedTimezone);
+      }
+    };
+    loadTimezone();
+  }, []);
+
+  const formattedDate = moment(selectedDate)
+    .tz(timezone)
+    .format('MMM D, YYYY')
+    .replace(/^([A-Za-z]+)/, match => match.toUpperCase());
 
   const handleOpenDateSheet = () => {
     Keyboard.dismiss();
@@ -55,8 +66,8 @@ const Header = ({ navigation }) => {
           {formattedDate}
         </Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={handleNewChat}>
-        <Ionicons name="create-outline" size={24} color={isDarkMode ? 'white' : 'black'} />
+      <TouchableOpacity>
+        <Ionicons name="ellipsis-horizontal" size={24} color={isDarkMode ? 'white' : 'black'} />
       </TouchableOpacity>
 
       <CalendarBottomSheet

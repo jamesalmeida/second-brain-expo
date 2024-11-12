@@ -8,6 +8,7 @@ import { Platform } from 'react-native';
 import { CalendarService } from '../services/CalendarService';
 import { ReminderService } from '../services/ReminderService';
 import { LocationService } from '../services/LocationService';
+import moment from 'moment-timezone';
 
 // TOGGLE FOR WEB DEVELOPMENT ONLY - DISABLE IN PRODUCTION
 // API KEYS ARE NOT SUPPORTED ON WEB IN THIS VERSION
@@ -31,6 +32,17 @@ export const ChatProvider = ({ children }) => {
   const [hasCalendarAccess, setHasCalendarAccess] = useState(false);
   const [defaultModel, setDefaultModel] = useState('GPT-3.5');
   const [hiddenModels, setHiddenModels] = useState([]);
+  const [timezone, setTimezone] = useState(moment.tz.guess());
+
+  useEffect(() => {
+    const loadTimezone = async () => {
+      const savedTimezone = await AsyncStorage.getItem('selectedTimezone');
+      if (savedTimezone) {
+        setTimezone(savedTimezone);
+      }
+    };
+    loadTimezone();
+  }, []);
 
   const changeModel = async (newModel) => {
     console.log('Model changed to:', newModel);
@@ -159,9 +171,11 @@ export const ChatProvider = ({ children }) => {
       if (Platform.OS === 'web') {
         // Web loading implementation
         const chats = await AsyncStorage.getItem('chats');
-        return chats ? JSON.parse(chats) : [];
+        const parsedChats = chats ? JSON.parse(chats) : [];
+        // Sort chats by date in descending order
+        return parsedChats.sort((a, b) => b.id.localeCompare(a.id));
       } else {
-        // Native loading implementation (your existing code)
+        // Native loading implementation
         const files = await FileSystem.readDirectoryAsync(chatDirectory);
         const chats = await Promise.all(
           files.filter(file => file.endsWith('.md')).map(async (file) => {
@@ -194,7 +208,8 @@ export const ChatProvider = ({ children }) => {
             };
           })
         );
-        return chats.sort((a, b) => a.id - b.id);
+        // Sort chats by date in descending order
+        return chats.sort((a, b) => b.id.localeCompare(a.id));
       }
     } catch (e) {
       console.error('Error loading chats', e);
@@ -202,27 +217,61 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  const createNewChat = () => {
+  const createNewChat = (date = new Date()) => {
+    const momentDate = moment(date).tz(timezone);
+    const dateStr = momentDate.format('YYYY-MM-DD');
+    const existingChat = chats.find(chat => chat.id === dateStr);
+    
+    if (existingChat) {
+      setCurrentChatId(dateStr);
+      return existingChat;
+    }
+
     const newChat = {
-      id: Date.now().toString(),
-      title: new Date().toLocaleString(),
+      id: dateStr,
+      title: momentDate.format('LL'),
       messages: [],
-      model: defaultModel
+      model: defaultModel,
+      date: momentDate.toISOString()
     };
-    setCurrentChatId(newChat.id);
-    setCurrentModel(defaultModel);
+    
+    setCurrentChatId(dateStr);
     return newChat;
   };
 
+  const getChatByDate = (date) => {
+    const dateStr = moment(date).tz(timezone).format('YYYY-MM-DD');
+    return chats.find(chat => chat.id === dateStr);
+  };
+
   const addMessage = async (role, content) => {
-    const updatedChats = chats.map(chat => 
-      chat.id === currentChatId 
-        ? { ...chat, messages: [...chat.messages, { role, content }] }
-        : chat
-    );
-    const updatedChat = updatedChats.find(chat => chat.id === currentChatId);
+    const dateStr = currentChatId;
+    const existingChat = chats.find(chat => chat.id === dateStr);
+    
+    let updatedChats;
+    if (!existingChat) {
+      // This is the first message for this date
+      const newChat = {
+        id: dateStr,
+        title: new Date(dateStr).toLocaleDateString(),
+        messages: [{ role, content }],
+        model: defaultModel,
+        date: new Date(dateStr).toISOString()
+      };
+      updatedChats = [...chats, newChat];
+    } else {
+      updatedChats = chats.map(chat => 
+        chat.id === dateStr 
+          ? { ...chat, messages: [...chat.messages, { role, content }] }
+          : chat
+      );
+    }
+    
+    // Sort chats by date in descending order
+    const sortedChats = updatedChats.sort((a, b) => b.id.localeCompare(a.id));
+    setChats(sortedChats);
+    const updatedChat = sortedChats.find(chat => chat.id === dateStr);
     await saveChat(updatedChat);
-    setChats(updatedChats);
   };
 
   const openAIImageGenerationFunctions = [
@@ -1243,6 +1292,7 @@ export const ChatProvider = ({ children }) => {
       saveDefaultModel,
       hiddenModels,
       toggleModelVisibility,
+      getChatByDate,
     }}>
       {children}
     </ChatContext.Provider>

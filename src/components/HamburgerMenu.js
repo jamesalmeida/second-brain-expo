@@ -5,6 +5,8 @@ import { useChat } from '../contexts/ChatContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useDrawerStatus } from '@react-navigation/drawer';
 import Animated, { withTiming, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import moment from 'moment-timezone';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CollapsibleSection = ({ title, isExpanded, onPress, children, borderColor, textColor, icon }) => {
   const rotateValue = useSharedValue(isExpanded ? 180 : 0);
@@ -53,10 +55,11 @@ const CollapsibleSection = ({ title, isExpanded, onPress, children, borderColor,
   );
 };
 
-const HamburgerMenu = ({ openSettings, navigation }) => {
+const HamburgerMenu = ({ openSettings, navigation, selectedDate, setSelectedDate }) => {
   const { chats, currentChatId, setCurrentChatId, deleteChat } = useChat();
   const { isDarkMode } = useTheme();
   const [expandedSection, setExpandedSection] = useState(null);
+  const [timezone, setTimezone] = useState(moment.tz.guess());
   
   const backgroundColor = isDarkMode ? '#1c1c1e' : 'white';
   const textColor = isDarkMode ? '#ffffff' : '#000000';
@@ -70,12 +73,27 @@ const HamburgerMenu = ({ openSettings, navigation }) => {
     }
   }, [isDrawerOpen]);
 
+  useEffect(() => {
+    const loadTimezone = async () => {
+      const savedTimezone = await AsyncStorage.getItem('selectedTimezone');
+      if (savedTimezone) {
+        setTimezone(savedTimezone);
+      }
+    };
+    loadTimezone();
+  }, []);
+
   const handleSectionPress = (sectionName) => {
     setExpandedSection(expandedSection === sectionName ? null : sectionName);
   };
 
   const handleChatSelect = (chatId) => {
     setCurrentChatId(chatId);
+    const selectedChat = chats.find(chat => chat.id === chatId);
+    if (selectedChat) {
+      const chatDate = moment(selectedChat.id).toDate();
+      setSelectedDate(chatDate);
+    }
     navigation.closeDrawer();
   };
 
@@ -97,25 +115,40 @@ const HamburgerMenu = ({ openSettings, navigation }) => {
     );
   };
 
-  const renderChatItem = ({ item }) => (
-    <View style={[styles.chatItemContainer, { borderBottomColor: borderColor }]}>
-      <TouchableOpacity
-        style={[
-          styles.chatItem,
-          item.id === currentChatId && styles.activeChatItem
-        ]}
-        onPress={() => handleChatSelect(item.id)}
-      >
-        <Text style={[styles.chatTitle, { color: textColor }]}>{item.title}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDeleteChat(item.id)}
-      >
-        <Ionicons name="trash-outline" size={24} color={textColor} />
-      </TouchableOpacity>
-    </View>
-  );
+  const renderChatItem = ({ item }) => {
+    const chatDate = moment(item.id).tz(timezone).format('LL');
+    const previewText = item.messages[item.messages.length - 1]?.content || '';
+    const truncatedPreview = previewText.length > 50 
+      ? previewText.slice(0, 50) + '...'
+      : previewText;
+
+    return (
+      <View style={[styles.chatItemContainer, { borderBottomColor: borderColor }]}>
+        <TouchableOpacity
+          style={[
+            styles.chatItem,
+            item.id === currentChatId && styles.activeChatItem
+          ]}
+          onPress={() => handleChatSelect(item.id)}
+        >
+          <Text style={[styles.chatTitle, { color: textColor }]}>
+            {chatDate}
+          </Text>
+          {truncatedPreview && (
+            <Text style={[styles.chatPreview, { color: textColor + '80' }]}>
+              {truncatedPreview}
+            </Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDeleteChat(item.id)}
+        >
+          <Ionicons name="trash-outline" size={24} color={textColor} />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   // console.log('--------- CHAT HISTORY START ---------');
   // console.log(chats);
@@ -253,6 +286,11 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontStyle: 'italic',
     opacity: 0.6,
+  },
+  chatPreview: {
+    fontSize: 14,
+    marginTop: 4,
+    opacity: 0.7,
   },
 });
 

@@ -5,6 +5,9 @@ import { Portal } from '@gorhom/portal';
 import { Calendar, Agenda } from 'react-native-calendars';
 import { CalendarService } from '../services/CalendarService';
 import { Ionicons } from '@expo/vector-icons';
+import { useChat } from '../contexts/ChatContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import moment from 'moment-timezone';
 
 const CalendarBottomSheet = ({ 
   bottomSheetRef, 
@@ -17,6 +20,62 @@ const CalendarBottomSheet = ({
   const [events, setEvents] = useState({});
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { getChatByDate, createNewChat, currentChatId, setCurrentChatId } = useChat();
+  const [timezone, setTimezone] = useState(moment.tz.guess());
+
+  useEffect(() => {
+    // Load saved timezone
+    const loadTimezone = async () => {
+      const savedTimezone = await AsyncStorage.getItem('selectedTimezone');
+      if (savedTimezone) {
+        setTimezone(savedTimezone);
+      }
+    };
+    loadTimezone();
+  }, []);
+
+  const handleDateSelect = (day) => {
+    // Create date in the user's timezone
+    const selectedMoment = moment.tz([day.year, day.month - 1, day.day], timezone);
+    const selectedDate = selectedMoment.toDate();
+    setSelectedDate(selectedDate);
+    
+    // Get or create chat for selected date
+    const dateStr = selectedMoment.format('YYYY-MM-DD');
+    const existingChat = getChatByDate(selectedDate);
+    
+    if (existingChat) {
+      setCurrentChatId(dateStr);
+    } else {
+      createNewChat(selectedDate);
+    }
+  };
+
+  // Format the date for the calendar
+  const formattedDate = moment(selectedDate).tz(timezone).format('YYYY-MM-DD');
+  const formattedMonth = moment(selectedDate).tz(timezone).format('MMMM YYYY');
+  
+  // Format today's date in the user's timezone
+  const today = moment().tz(timezone).format('YYYY-MM-DD');
+
+  const markedDates = {
+    [formattedDate]: {
+      selected: true,
+      selectedColor: '#007AFF',
+    },
+    [today]: {
+      marked: true,
+      dotColor: '#007AFF'
+    }
+  };
+
+  // If today is the selected date, merge the properties
+  if (today === formattedDate) {
+    markedDates[today] = {
+      ...markedDates[today],
+      ...markedDates[formattedDate]
+    };
+  }
 
   const handleChange = useCallback((index) => {
     console.log('Calendar sheet index changed:', index);
@@ -129,27 +188,6 @@ const CalendarBottomSheet = ({
     // }
   };
 
-  const formattedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()).toISOString().split('T')[0];
-  const today = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0];
-  const markedDates = {
-    [formattedDate]: {
-      selected: true,
-      selectedColor: '#007AFF',
-    },
-    [today]: {
-      marked: true,
-      dotColor: '#007AFF'
-    }
-  };
-
-  // If today is the selected date, merge the properties
-  if (today === formattedDate) {
-    markedDates[today] = {
-      ...markedDates[today],
-      ...markedDates[formattedDate]
-    };
-  }
-
   const renderItem = (item) => {
     return (
       <View style={[styles.item, { backgroundColor: isDarkMode ? '#2c2c2e' : '#f2f2f7' }]}>
@@ -177,11 +215,6 @@ const CalendarBottomSheet = ({
       </View>
     );
   };
-
-  const formattedMonth = selectedDate.toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric'
-  });
 
   const loadItemsForMonth = async (month) => {
     if (!isSheetOpen) return;
@@ -271,9 +304,7 @@ const CalendarBottomSheet = ({
                 renderItem={renderItem}
                 renderEmptyDate={renderEmptyDate}
                 onDayPress={(day) => {
-                  const [year, month, date] = day.dateString.split('-');
-                  const newDate = new Date(year, month - 1, date);
-                  setSelectedDate(newDate);
+                  handleDateSelect(day);
                 }}
                 showClosingKnob={true}
                 hideKnob={false}

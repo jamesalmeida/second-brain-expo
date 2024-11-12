@@ -19,6 +19,7 @@ import { PortalProvider } from '@gorhom/portal';
 const Drawer = createDrawerNavigator();
 
 export default function App() {
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [openSettings, setOpenSettings] = useState(() => (navigation) => {
     navigation.closeDrawer();
     bottomSheetRef.current?.expand();
@@ -60,8 +61,8 @@ export default function App() {
       <SafeAreaView style={{ flex: 1, backgroundColor: isDarkMode ? 'black' : 'white' }}>
         <Header 
           navigation={navigation} 
-          currentModel={currentModel}
-          setCurrentModel={setCurrentModel}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
         />
         <KeyboardAvoidingView 
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -98,6 +99,8 @@ export default function App() {
                     {...props} 
                     openSettings={() => openSettings(props.navigation)} 
                     navigation={props.navigation}
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate}
                   />
                 )}
                 screenOptions={{
