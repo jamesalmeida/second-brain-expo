@@ -33,6 +33,7 @@ export const ChatProvider = ({ children }) => {
   const [defaultModel, setDefaultModel] = useState('GPT-3.5');
   const [hiddenModels, setHiddenModels] = useState([]);
   const [timezone, setTimezone] = useState(moment.tz.guess());
+  const [savedChatIds, setSavedChatIds] = useState(new Set());
 
   useEffect(() => {
     const loadTimezone = async () => {
@@ -161,6 +162,8 @@ export const ChatProvider = ({ children }) => {
         
         await FileSystem.writeAsStringAsync(filePath, markdownContent);
       }
+      // Add the chat ID to savedChatIds
+      setSavedChatIds(prev => new Set(prev).add(chat.id));
     } catch (e) {
       console.error('Error saving chat', e);
     }
@@ -168,16 +171,15 @@ export const ChatProvider = ({ children }) => {
 
   const loadChats = async () => {
     try {
+      let loadedChats;
       if (Platform.OS === 'web') {
         // Web loading implementation
         const chats = await AsyncStorage.getItem('chats');
-        const parsedChats = chats ? JSON.parse(chats) : [];
-        // Sort chats by date in descending order
-        return parsedChats.sort((a, b) => b.id.localeCompare(a.id));
+        loadedChats = chats ? JSON.parse(chats) : [];
       } else {
         // Native loading implementation
         const files = await FileSystem.readDirectoryAsync(chatDirectory);
-        const chats = await Promise.all(
+        loadedChats = await Promise.all(
           files.filter(file => file.endsWith('.md')).map(async (file) => {
             const content = await FileSystem.readAsStringAsync(chatDirectory + file, { encoding: FileSystem.EncodingType.UTF8 });
             const lines = content.split('\n');
@@ -208,9 +210,11 @@ export const ChatProvider = ({ children }) => {
             };
           })
         );
-        // Sort chats by date in descending order
-        return chats.sort((a, b) => b.id.localeCompare(a.id));
       }
+      // Initialize savedChatIds with loaded chat IDs
+      setSavedChatIds(new Set(loadedChats.map(chat => chat.id)));
+      // Sort chats by date in descending order
+      return loadedChats.sort((a, b) => b.id.localeCompare(a.id));
     } catch (e) {
       console.error('Error loading chats', e);
       return [];
@@ -1264,6 +1268,10 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const isChatSaved = (chatId) => {
+    return savedChatIds.has(chatId);
+  };
+
   return (
     <ChatContext.Provider value={{ 
       chats, 
@@ -1293,6 +1301,7 @@ export const ChatProvider = ({ children }) => {
       hiddenModels,
       toggleModelVisibility,
       getChatByDate,
+      isChatSaved,
     }}>
       {children}
     </ChatContext.Provider>

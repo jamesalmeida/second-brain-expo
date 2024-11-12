@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ChatInfoSheet from './ChatInfoSheet';
 
 const Header = ({ navigation, selectedDate, setSelectedDate }) => {
-  const { createNewChat } = useChat();
+  const { createNewChat, currentChatId, isChatSaved } = useChat();
   const { isDarkMode } = useTheme();
   const dateBottomSheetRef = useRef(null);
   const calendarSnapPoints = ['93%'];
@@ -74,8 +74,15 @@ const Header = ({ navigation, selectedDate, setSelectedDate }) => {
           {formattedDate}
         </Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={handleOpenChatInfo}>
-        <Ionicons name="information-circle-outline" size={24} color={isDarkMode ? 'white' : 'black'} />
+      <TouchableOpacity 
+        onPress={handleOpenChatInfo}
+        disabled={!isChatSaved(currentChatId)}
+        style={[
+          styles.iconButton, 
+          !isChatSaved(currentChatId) && styles.disabledButton
+        ]}
+      >
+        <Ionicons name="information-circle-outline" size={24} color={!isChatSaved(currentChatId) ? '#8E8E93' : (isDarkMode ? '#FFFFFF' : '#000000')} />
       </TouchableOpacity>
 
       <CalendarBottomSheet
@@ -118,6 +125,12 @@ const styles = StyleSheet.create({
   },
   calendarIcon: {
     marginRight: 2,
+  },
+  iconButton: {
+    marginLeft: 10,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
 
