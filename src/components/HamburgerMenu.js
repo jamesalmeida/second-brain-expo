@@ -88,12 +88,18 @@ const HamburgerMenu = ({ openSettings, navigation, selectedDate, setSelectedDate
   };
 
   const handleChatSelect = (chatId) => {
+    console.log('HamburgerMenu - handleChatSelect called with chatId:', chatId);
+    
     setCurrentChatId(chatId);
     const selectedChat = chats.find(chat => chat.id === chatId);
+    console.log('HamburgerMenu - Found selected chat:', selectedChat);
+    
     if (selectedChat) {
       const chatDate = moment(selectedChat.id).toDate();
+      console.log('HamburgerMenu - Setting selected date to:', chatDate);
       setSelectedDate(chatDate);
     }
+    
     navigation.closeDrawer();
   };
 

@@ -34,11 +34,12 @@ const CalendarBottomSheet = ({
     loadTimezone();
   }, []);
 
-  const handleDateSelect = (day) => {
+  const handleDateSelect = async (day) => {
+    console.log('CalendarBottomSheet - handleDateSelect called with day:', day);
+    
     // Create date in the user's timezone
     const selectedMoment = moment.tz([day.year, day.month - 1, day.day], timezone);
     const selectedDate = selectedMoment.toDate();
-    setSelectedDate(selectedDate);
     
     // Get or create chat for selected date
     const dateStr = selectedMoment.format('YYYY-MM-DD');
@@ -49,6 +50,14 @@ const CalendarBottomSheet = ({
     } else {
       createNewChat(selectedDate);
     }
+
+    setSelectedDate(selectedDate);
+
+    // Load events for the selected month
+    const month = {
+      timestamp: selectedDate.getTime()
+    };
+    await loadItemsForMonth(month);
   };
 
   // Format the date for the calendar
@@ -78,10 +87,24 @@ const CalendarBottomSheet = ({
   }
 
   const handleChange = useCallback((index) => {
-    console.log('Calendar sheet index changed:', index);
-    setIsSheetOpen(index === 0);
+    console.log('CalendarBottomSheet - handleChange called with index:', index);
+    // Only update isSheetOpen if we're not in the middle of a date selection
+    const isOpen = index >= 0;
+    setIsSheetOpen(isOpen);
     handleSheetChanges(index);
   }, [handleSheetChanges]);
+
+  // Add an effect to load events when sheet opens
+  useEffect(() => {
+    console.log('CalendarBottomSheet - Sheet open state changed to:', isSheetOpen);
+    if (isSheetOpen && selectedDate) {
+      console.log('CalendarBottomSheet - Loading initial events for month');
+      const month = {
+        timestamp: selectedDate.getTime()
+      };
+      loadItemsForMonth(month);
+    }
+  }, [isSheetOpen, selectedDate, loadItemsForMonth]);
 
   useEffect(() => {
     const loadEvents = async () => {
@@ -216,9 +239,14 @@ const CalendarBottomSheet = ({
     );
   };
 
-  const loadItemsForMonth = async (month) => {
-    if (!isSheetOpen) return;
+  const loadItemsForMonth = useCallback(async (month) => {
+    console.log('CalendarBottomSheet - loadItemsForMonth called with month:', month);
+    if (!isSheetOpen) {
+      console.log('CalendarBottomSheet - Sheet is not open, returning early');
+      return;
+    }
     
+    setIsLoading(true);
     try {
       const monthStart = new Date(month.timestamp);
       monthStart.setDate(1);
@@ -232,7 +260,7 @@ const CalendarBottomSheet = ({
       const calendarEvents = await CalendarService.getEvents('extended');
       const formattedEvents = {};
 
-      // Initialize the entire month with empty arrays
+      // Initialize all dates in the month with empty arrays
       for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0];
         formattedEvents[dateStr] = [];
@@ -241,26 +269,37 @@ const CalendarBottomSheet = ({
       // Add events if they exist
       if (Array.isArray(calendarEvents)) {
         calendarEvents.forEach(event => {
-          const dateStr = new Date(event.startDate).toISOString().split('T')[0];
-          if (!formattedEvents[dateStr]) {
-            formattedEvents[dateStr] = [];
+          const eventDate = new Date(event.startDate);
+          const dateStr = eventDate.toISOString().split('T')[0];
+          
+          if (eventDate >= monthStart && eventDate <= monthEnd) {
+            if (!formattedEvents[dateStr]) {
+              formattedEvents[dateStr] = [];
+            }
+            formattedEvents[dateStr].push({
+              ...event,
+              height: 80,
+              day: dateStr
+            });
           }
-          formattedEvents[dateStr].push({
-            ...event,
-            height: 80,
-            day: dateStr
-          });
         });
       }
 
-      setEvents(prevEvents => ({
-        ...prevEvents,
-        ...formattedEvents
-      }));
+      console.log('CalendarBottomSheet - Events loaded:', formattedEvents);
+      
+      setEvents(prevEvents => {
+        console.log('CalendarBottomSheet - Updating events state');
+        return {
+          ...prevEvents,
+          ...formattedEvents
+        };
+      });
     } catch (error) {
-      console.error('Error loading events for month:', error);
+      console.error('CalendarBottomSheet - Error loading events:', error);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [isSheetOpen]);
 
   return (
     <Portal>
@@ -275,52 +314,48 @@ const CalendarBottomSheet = ({
         backgroundStyle={{ backgroundColor: isDarkMode ? '#1c1c1e' : 'white' }}
       >
         <BottomSheetView style={styles.container}>
-          {isSheetOpen && (
-            <>
-              <View style={styles.headerContainer}>
-                <Ionicons
-                  name="today-outline" 
-                  size={24} 
-                  color={isDarkMode ? 'white' : 'black'} 
-                  onPress={() => setSelectedDate(new Date())}
-                />
-                <Text style={[
-                  styles.monthHeader, 
-                  { color: isDarkMode ? '#ffffff' : '#000000' }
-                ]}>
-                  {formattedMonth}
-                </Text>
-                <Ionicons
-                  name="close-circle-outline" 
-                  size={24} 
-                  color={isDarkMode ? 'white' : 'black'}
-                  onPress={() => bottomSheetRef.current?.close()} 
-                />
-              </View>
-              <Agenda
-                theme={calendarTheme}
-                items={events}
-                selected={formattedDate}
-                renderItem={renderItem}
-                renderEmptyDate={renderEmptyDate}
-                onDayPress={(day) => {
-                  handleDateSelect(day);
-                }}
-                showClosingKnob={true}
-                hideKnob={false}
-                showOnlySelectedDayItems={false}
-                pastScrollRange={12}
-                futureScrollRange={12}
-                refreshControl={null}
-                refreshing={false}
-                loadItemsForMonth={loadItemsForMonth}
-                style={{
-                  backgroundColor: isDarkMode ? '#1c1c1e' : 'white'
-                }}
-                markedDates={markedDates}
-              />
-            </>
-          )}
+          <View style={styles.headerContainer}>
+            <Ionicons
+              name="today-outline" 
+              size={24} 
+              color={isDarkMode ? 'white' : 'black'} 
+              onPress={() => setSelectedDate(new Date())}
+            />
+            <Text style={[
+              styles.monthHeader, 
+              { color: isDarkMode ? '#ffffff' : '#000000' }
+            ]}>
+              {formattedMonth}
+            </Text>
+            <Ionicons
+              name="close-circle-outline" 
+              size={24} 
+              color={isDarkMode ? 'white' : 'black'}
+              onPress={() => bottomSheetRef.current?.close()} 
+            />
+          </View>
+          <Agenda
+            theme={calendarTheme}
+            items={events}
+            selected={formattedDate}
+            renderItem={renderItem}
+            renderEmptyDate={renderEmptyDate}
+            onDayPress={handleDateSelect}
+            showClosingKnob={false}
+            hideKnob={true}
+            showOnlySelectedDayItems={false}
+            pastScrollRange={3}
+            futureScrollRange={3}
+            refreshControl={null}
+            refreshing={isLoading}
+            loadItemsForMonth={loadItemsForMonth}
+            style={{
+              backgroundColor: isDarkMode ? '#1c1c1e' : 'white'
+            }}
+            markedDates={markedDates}
+            enableSwipeMonths={true}
+            renderEmptyData={renderEmptyDate}
+          />
         </BottomSheetView>
       </BottomSheet>
     </Portal>
