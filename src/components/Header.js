@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import CalendarBottomSheet from './CalendarBottomSheet';
 import moment from 'moment-timezone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ChatInfoSheet from './ChatInfoSheet';
 
 const Header = ({ navigation, selectedDate, setSelectedDate }) => {
   const { createNewChat } = useChat();
@@ -13,6 +14,8 @@ const Header = ({ navigation, selectedDate, setSelectedDate }) => {
   const dateBottomSheetRef = useRef(null);
   const calendarSnapPoints = ['93%'];
   const [timezone, setTimezone] = useState(moment.tz.guess());
+  const chatInfoSheetRef = useRef(null);
+  const chatInfoSnapPoints = ['60%'];
 
   useEffect(() => {
     const loadTimezone = async () => {
@@ -50,6 +53,11 @@ const Header = ({ navigation, selectedDate, setSelectedDate }) => {
     createNewChat();
   };
 
+  const handleOpenChatInfo = () => {
+    Keyboard.dismiss();
+    chatInfoSheetRef.current?.snapToIndex(0);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: isDarkMode ? 'black' : 'white' }]}>
       <TouchableOpacity onPress={() => navigation.openDrawer()}>
@@ -66,8 +74,8 @@ const Header = ({ navigation, selectedDate, setSelectedDate }) => {
           {formattedDate}
         </Text>
       </TouchableOpacity>
-      <TouchableOpacity>
-        <Ionicons name="ellipsis-horizontal" size={24} color={isDarkMode ? 'white' : 'black'} />
+      <TouchableOpacity onPress={handleOpenChatInfo}>
+        <Ionicons name="information-circle-outline" size={24} color={isDarkMode ? 'white' : 'black'} />
       </TouchableOpacity>
 
       <CalendarBottomSheet
@@ -77,6 +85,14 @@ const Header = ({ navigation, selectedDate, setSelectedDate }) => {
         isDarkMode={isDarkMode}
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
+      />
+
+      <ChatInfoSheet
+        bottomSheetRef={chatInfoSheetRef}
+        snapPoints={chatInfoSnapPoints}
+        handleSheetChanges={handleSheetChanges}
+        isDarkMode={isDarkMode}
+        selectedDate={selectedDate}
       />
     </View>
   );
