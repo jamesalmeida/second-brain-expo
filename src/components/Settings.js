@@ -22,7 +22,9 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
     grokApiKey, setGrokApiKey,
     useBuiltInKey, setUseBuiltInKey,
     useGrokKey, setUseGrokKey,
-    builtInKeyCode 
+    builtInKeyCode,
+    availableModels,
+    hiddenModels
   } = useChat();
   const [isCodeModalVisible, setIsCodeModalVisible] = useState(false);
   const [enteredCode, setEnteredCode] = useState('');
@@ -413,7 +415,12 @@ const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdr
             onPress={() => handleMenuTransition('aimodels')}
           >
             <Text style={{ color: textColor }}>AI Models</Text>
-            <Ionicons name="chevron-forward" size={24} color={textColor} />
+            <View style={styles.settingItemContent}>
+              <Text style={{ color: isDarkMode ? '#666666' : '#999999' }}>
+                {availableModels.filter(model => !hiddenModels.includes(model.name)).length} of {availableModels.length} active
+              </Text>
+              <Ionicons name="chevron-forward" size={24} color={textColor} />
+            </View>
           </TouchableOpacity>
 
           {/* Calendar Settings Button */}

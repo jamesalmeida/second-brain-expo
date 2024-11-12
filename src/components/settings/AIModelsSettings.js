@@ -18,6 +18,12 @@ const AIModelsSettings = ({
     toggleModelVisibility
   } = useChat();
 
+  // Calculate active models count
+  const modelCount = {
+    active: availableModels.filter(model => !hiddenModels.includes(model.name)).length,
+    total: availableModels.length
+  };
+
   return (
     <SettingsNestedMenu title="AI Models" onBack={onBack} isDarkMode={isDarkMode}>
       <View style={styles.container}>

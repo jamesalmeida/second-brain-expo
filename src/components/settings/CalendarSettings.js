@@ -110,7 +110,7 @@ const CalendarSettings = ({
             <Text style={{ color: textColor }}>Select Calendars</Text>
             <View style={styles.settingItemContent}>
               <Text style={{ color: isDarkMode ? '#666666' : '#999999' }}>
-                {calendarCount.active} of {calendarCount.total} calendars active
+                {calendarCount.active} of {calendarCount.total} active
               </Text>
               <Ionicons name="chevron-forward" size={24} color={textColor} />
             </View>
