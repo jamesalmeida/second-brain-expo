@@ -129,8 +129,8 @@ const CalendarBottomSheet = ({
     // }
   };
 
-  const formattedDate = selectedDate.toISOString().split('T')[0];
-  const today = new Date().toISOString().split('T')[0];
+  const formattedDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()).toISOString().split('T')[0];
+  const today = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0];
   const markedDates = {
     [formattedDate]: {
       selected: true,
