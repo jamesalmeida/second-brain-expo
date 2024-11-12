@@ -29,6 +29,11 @@ const CalendarSettings = ({
     loadTimezone();
   }, []);
 
+  const handleTimezoneChange = (newTimezone) => {
+    setSelectedTimezone(newTimezone);
+    setCurrentMenu('main');
+  };
+
   const handleBack = () => {
     if (currentMenu === 'main') {
       onBack();
@@ -55,6 +60,7 @@ const CalendarSettings = ({
         onBack={() => setCurrentMenu('main')}
         textColor={textColor}
         borderColor={borderColor}
+        onTimezoneSelect={handleTimezoneChange}
       />
     );
   }
