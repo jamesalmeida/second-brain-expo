@@ -16,16 +16,29 @@ const ChatOptionsSheet = memo(({ bottomSheetRef, snapPoints, handleSheetChanges 
   } = useChat();
   const [currentView, setCurrentView] = useState('main');
   const slideAnim = useState(new Animated.Value(0))[0];
+  const [isAnimatingSheet, setIsAnimatingSheet] = useState(false);
   
   const backgroundColor = isDarkMode ? '#1c1c1e' : 'white';
   const textColor = isDarkMode ? '#ffffff' : '#000000';
 
   const handleSheetChange = (index) => {
+    if (isAnimatingSheet) {
+      return;
+    }
+
+    setIsAnimatingSheet(true);
+    
     if (index === -1) {
       slideAnim.setValue(0);
       setCurrentView('main');
     }
+    
     handleSheetChanges(index);
+    
+    // Add a small delay before allowing the next animation
+    setTimeout(() => {
+      setIsAnimatingSheet(false);
+    }, 300);
   };
 
   const renderBackdrop = props => (

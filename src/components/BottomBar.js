@@ -58,19 +58,23 @@ const BottomBar = forwardRef((props, ref) => {
     // TODO: Implement actual voice recording functionality
   };
 
+  const handleOptionsPress = () => {
+    console.log('💬 Chat Options button pressed');
+    Keyboard.dismiss();
+    setTimeout(() => {
+      if (chatOptionsSheetRef.current) {
+        console.log('Attempting to open sheet...');
+        chatOptionsSheetRef.current.snapToIndex(0);
+      }
+    }, 100);
+  };
+
   return (
     <View>
       <View style={[styles.container, { backgroundColor: isDarkMode ? 'black' : 'white' }]}>
         <View style={[styles.inputContainer, { borderColor: isDarkMode ? '#444' : '#ccc' }]}>
           <TouchableOpacity 
-            onPress={() => {
-              console.log('💬 Chat Options button pressed');
-              Keyboard.dismiss();
-              if (chatOptionsSheetRef.current) {
-                console.log('Attempting to open sheet...');
-                chatOptionsSheetRef.current.snapToIndex(0);
-              }
-            }} 
+            onPress={handleOptionsPress}
             style={styles.iconButton}
           >
             <Ionicons name="hardware-chip-outline" size={24} color={isDarkMode ? '#fff' : '#000'} />
