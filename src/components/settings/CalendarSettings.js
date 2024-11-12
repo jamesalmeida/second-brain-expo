@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, Switch, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Switch, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SettingsNestedMenu from './SettingsNestedMenu';
 import SelectCalendars from './SelectCalendars';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import moment from 'moment-timezone';
+import TimezoneSelector from './TimezoneSelector';
 
 const CalendarSettings = ({ 
   isDarkMode,
@@ -12,9 +15,19 @@ const CalendarSettings = ({
   toggleReminderAccess,
   onBack,
   textColor,
-  borderColor 
+  borderColor
 }) => {
   const [currentMenu, setCurrentMenu] = useState('main');
+  const [selectedTimezone, setSelectedTimezone] = useState('');
+
+  useEffect(() => {
+    const loadTimezone = async () => {
+      const saved = await AsyncStorage.getItem('selectedTimezone');
+      setSelectedTimezone(saved || moment.tz.guess());
+    };
+    
+    loadTimezone();
+  }, []);
 
   const handleBack = () => {
     if (currentMenu === 'main') {
@@ -35,9 +48,20 @@ const CalendarSettings = ({
     );
   }
 
+  if (currentMenu === 'timezone') {
+    return (
+      <TimezoneSelector
+        isDarkMode={isDarkMode}
+        onBack={() => setCurrentMenu('main')}
+        textColor={textColor}
+        borderColor={borderColor}
+      />
+    );
+  }
+
   return (
     <SettingsNestedMenu title="Calendar Settings" onBack={handleBack} isDarkMode={isDarkMode}>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: isDarkMode ? '#000000' : '#ffffff' }]}>
         <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <View style={styles.settingItemContent}>
             <Text style={{ color: textColor }}>Calendar Access</Text>
@@ -65,6 +89,19 @@ const CalendarSettings = ({
             <Ionicons name="chevron-forward" size={24} color={textColor} />
           </TouchableOpacity>
         )}
+
+        <TouchableOpacity 
+          style={[styles.settingItem, { borderBottomColor: borderColor }]}
+          onPress={() => setCurrentMenu('timezone')}
+        >
+          <Text style={{ color: textColor }}>Timezone</Text>
+          <View style={styles.settingItemContent}>
+            <Text style={{ color: isDarkMode ? '#666666' : '#999999' }}>
+              {selectedTimezone}
+            </Text>
+            <Ionicons name="chevron-forward" size={24} color={textColor} />
+          </View>
+        </TouchableOpacity>
 
         <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
           <View style={styles.settingItemContent}>
@@ -105,6 +142,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  option: {
+    padding: 15,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#cccccc',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  optionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  optionText: {
+    fontSize: 16,
+  },
+  optionDetail: {
+    fontSize: 14,
   },
 });
 
