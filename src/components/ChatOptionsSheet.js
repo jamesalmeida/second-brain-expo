@@ -29,13 +29,14 @@ const ChatOptionsSheet = memo(({ bottomSheetRef, snapPoints, handleSheetChanges 
     setIsAnimatingSheet(true);
     
     if (index === -1) {
-      slideAnim.setValue(0);
-      setCurrentView('main');
+      setTimeout(() => {
+        slideAnim.setValue(0);
+        setCurrentView('main');
+      }, 100);
     }
     
     handleSheetChanges(index);
     
-    // Add a small delay before allowing the next animation
     setTimeout(() => {
       setIsAnimatingSheet(false);
     }, 300);

@@ -21,13 +21,19 @@ const BottomBar = forwardRef((props, ref) => {
   const handleSheetChanges = (index) => {
     console.log('handleSheetChanges called with index:', index);
     console.log('Current sheet state:', isSheetOpen);
-    setIsSheetOpen(index !== -1);
-    if (index === -1) {
-      console.log('Attempting to focus input');
-      inputRef.current?.focus();
-    } else {
-      console.log('Attempting to blur input');
-      inputRef.current?.blur();
+    
+    if ((index !== -1) !== isSheetOpen) {
+      setIsSheetOpen(index !== -1);
+      
+      setTimeout(() => {
+        if (index === -1) {
+          console.log('Attempting to focus input');
+          inputRef.current?.focus();
+        } else {
+          console.log('Attempting to blur input');
+          inputRef.current?.blur();
+        }
+      }, 100);
     }
   };
 
