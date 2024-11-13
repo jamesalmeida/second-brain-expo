@@ -30,10 +30,6 @@ export default function App() {
 
   const snapPoints = useMemo(() => ['92%'], []);
 
-  const handleSheetChanges = useCallback((index) => {
-    console.log('handleSheetChanges', index);
-  }, []);
-
   const renderBackdrop = useCallback(
     (props) => (
       <BottomSheetBackdrop
@@ -75,7 +71,6 @@ export default function App() {
         <Settings
           bottomSheetRef={bottomSheetRef}
           snapPoints={snapPoints}
-          handleSheetChanges={handleSheetChanges}
           renderBackdrop={renderBackdrop}
         />
       </SafeAreaView>

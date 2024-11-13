@@ -23,6 +23,18 @@ const CalendarBottomSheet = ({
   const { getChatByDate, createNewChat, currentChatId, setCurrentChatId } = useChat();
   const [timezone, setTimezone] = useState(moment.tz.guess());
 
+  // Enhanced console logs
+  useEffect(() => {
+    console.log('events in CalendarBottomSheet:', events);
+    console.log('isSheetOpen in CalendarBottomSheet:', isSheetOpen);
+    console.log('isLoading in CalendarBottomSheet:', isLoading);
+    console.log('selectedDate in CalendarBottomSheet:', selectedDate.toString());
+    console.log('currentChatId in CalendarBottomSheet:', currentChatId);
+    console.log('timezone in CalendarBottomSheet:', timezone);
+    console.log('Type of selectedDate:', typeof selectedDate); // Should print 'object'
+    console.log('Is selectedDate a Date instance?', selectedDate instanceof Date); // Should print true
+  }, [events, isSheetOpen, isLoading, selectedDate, currentChatId, timezone]);
+
   useEffect(() => {
     // Load saved timezone
     const loadTimezone = async () => {
@@ -39,23 +51,23 @@ const CalendarBottomSheet = ({
     
     // Create date in the user's timezone
     const selectedMoment = moment.tz([day.year, day.month - 1, day.day], timezone);
-    const selectedDate = selectedMoment.toDate();
+    const newSelectedDate = selectedMoment.toDate();
     
     // Get or create chat for selected date
     const dateStr = selectedMoment.format('YYYY-MM-DD');
-    const existingChat = getChatByDate(selectedDate);
+    const existingChat = getChatByDate(newSelectedDate);
     
     if (existingChat) {
       setCurrentChatId(dateStr);
     } else {
-      createNewChat(selectedDate);
+      createNewChat(newSelectedDate);
     }
 
-    setSelectedDate(selectedDate);
+    setSelectedDate(newSelectedDate); // Ensure this is a Date object
 
     // Load events for the selected month
     const month = {
-      timestamp: selectedDate.getTime()
+      timestamp: newSelectedDate.getTime()
     };
     await loadItemsForMonth(month);
   };
@@ -63,6 +75,8 @@ const CalendarBottomSheet = ({
   // Format the date for the calendar
   const formattedDate = moment(selectedDate).tz(timezone).format('YYYY-MM-DD');
   const formattedMonth = moment(selectedDate).tz(timezone).format('MMMM YYYY');
+
+  console.log('formattedDate in CalendarBottomSheet:', formattedDate);
   
   // Format today's date in the user's timezone
   const today = moment().tz(timezone).format('YYYY-MM-DD');
@@ -78,6 +92,8 @@ const CalendarBottomSheet = ({
     }
   };
 
+  console.log('markedDates in CalendarBottomSheet:', markedDates);
+
   // If today is the selected date, merge the properties
   if (today === formattedDate) {
     markedDates[today] = {
@@ -88,75 +104,82 @@ const CalendarBottomSheet = ({
 
   const handleChange = useCallback((index) => {
     console.log('CalendarBottomSheet - handleChange called with index:', index);
-    // Only update isSheetOpen if we're not in the middle of a date selection
     const isOpen = index >= 0;
     setIsSheetOpen(isOpen);
     handleSheetChanges(index);
   }, [handleSheetChanges]);
 
-  // Add an effect to load events when sheet opens
   useEffect(() => {
-    console.log('CalendarBottomSheet - Sheet open state changed to:', isSheetOpen);
-    if (isSheetOpen && selectedDate) {
-      console.log('CalendarBottomSheet - Loading initial events for month');
-      const month = {
-        timestamp: selectedDate.getTime()
-      };
-      loadItemsForMonth(month);
+    if (!selectedDate || !isSheetOpen) return;
+    
+    const month = {
+      timestamp: selectedDate.getTime()
+    };
+    loadItemsForMonth(month);
+  }, [isSheetOpen]);
+
+  const loadItemsForMonth = async (month) => {
+    console.log('CalendarBottomSheet - loadItemsForMonth called with month:', month);
+
+    if (!isSheetOpen) {
+      console.log('CalendarBottomSheet - Sheet is not open, returning early');
+      return;
     }
-  }, [isSheetOpen, selectedDate, loadItemsForMonth]);
 
-  useEffect(() => {
-    const loadEvents = async () => {
-      if (!isSheetOpen) return;
+    setIsLoading(true);
+    try {
+      const monthStart = new Date(month.timestamp);
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
       
-      setIsLoading(true);
-      try {
-        // Get the start and end of the week
-        const startDate = new Date(selectedDate);
-        startDate.setDate(startDate.getDate() - 3); // 3 days before
-        const endDate = new Date(selectedDate);
-        endDate.setDate(endDate.getDate() + 3); // 3 days after
+      const monthEnd = new Date(monthStart);
+      monthEnd.setMonth(monthEnd.getMonth() + 1);
+      monthEnd.setDate(0);
+      monthEnd.setHours(23, 59, 59, 999);
 
-        const calendarEvents = await CalendarService.getEvents('extended');
-        const formattedEvents = {};
-        
-        // Initialize dates in the week range
-        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-          const dateStr = d.toISOString().split('T')[0];
-          formattedEvents[dateStr] = [];
-        }
+      const calendarEvents = await CalendarService.getEvents('extended');
+      const formattedEvents = {};
 
-        // Add events if they exist
-        if (Array.isArray(calendarEvents)) {
-          calendarEvents.forEach(event => {
-            const dateStr = new Date(event.startDate).toISOString().split('T')[0];
-            if (new Date(dateStr) >= startDate && new Date(dateStr) <= endDate) {
-              if (!formattedEvents[dateStr]) {
-                formattedEvents[dateStr] = [];
-              }
-              formattedEvents[dateStr].push({
-                ...event,
-                height: 80,
-                day: dateStr
-              });
+      // Initialize all dates in the month with empty arrays
+      for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        formattedEvents[dateStr] = [];
+      }
+
+      // Add events if they exist
+      if (Array.isArray(calendarEvents)) {
+        calendarEvents.forEach(event => {
+          const eventDate = new Date(event.startDate);
+          const dateStr = eventDate.toISOString().split('T')[0];
+          
+          if (eventDate >= monthStart && eventDate <= monthEnd) {
+            if (!formattedEvents[dateStr]) {
+              formattedEvents[dateStr] = [];
             }
-          });
-        }
+            formattedEvents[dateStr].push({
+              ...event,
+              height: 80,
+              day: dateStr
+            });
+          }
+        });
+      }
 
-        setEvents(prevEvents => ({
+      console.log('CalendarBottomSheet - Events loaded:', formattedEvents);
+      
+      setEvents(prevEvents => {
+        console.log('CalendarBottomSheet - Updating events state');
+        return {
           ...prevEvents,
           ...formattedEvents
-        }));
-      } catch (error) {
-        console.error('Error loading events:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadEvents();
-  }, [selectedDate, isSheetOpen]);
+        };
+      });
+    } catch (error) {
+      console.error('CalendarBottomSheet - Error loading events:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const renderBackdrop = props => (
     <BottomSheetBackdrop
@@ -239,68 +262,6 @@ const CalendarBottomSheet = ({
     );
   };
 
-  const loadItemsForMonth = useCallback(async (month) => {
-    console.log('CalendarBottomSheet - loadItemsForMonth called with month:', month);
-    if (!isSheetOpen) {
-      console.log('CalendarBottomSheet - Sheet is not open, returning early');
-      return;
-    }
-    
-    setIsLoading(true);
-    try {
-      const monthStart = new Date(month.timestamp);
-      monthStart.setDate(1);
-      monthStart.setHours(0, 0, 0, 0);
-      
-      const monthEnd = new Date(monthStart);
-      monthEnd.setMonth(monthEnd.getMonth() + 1);
-      monthEnd.setDate(0);
-      monthEnd.setHours(23, 59, 59, 999);
-
-      const calendarEvents = await CalendarService.getEvents('extended');
-      const formattedEvents = {};
-
-      // Initialize all dates in the month with empty arrays
-      for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split('T')[0];
-        formattedEvents[dateStr] = [];
-      }
-
-      // Add events if they exist
-      if (Array.isArray(calendarEvents)) {
-        calendarEvents.forEach(event => {
-          const eventDate = new Date(event.startDate);
-          const dateStr = eventDate.toISOString().split('T')[0];
-          
-          if (eventDate >= monthStart && eventDate <= monthEnd) {
-            if (!formattedEvents[dateStr]) {
-              formattedEvents[dateStr] = [];
-            }
-            formattedEvents[dateStr].push({
-              ...event,
-              height: 80,
-              day: dateStr
-            });
-          }
-        });
-      }
-
-      console.log('CalendarBottomSheet - Events loaded:', formattedEvents);
-      
-      setEvents(prevEvents => {
-        console.log('CalendarBottomSheet - Updating events state');
-        return {
-          ...prevEvents,
-          ...formattedEvents
-        };
-      });
-    } catch (error) {
-      console.error('CalendarBottomSheet - Error loading events:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isSheetOpen]);
-
   return (
     <Portal>
       <BottomSheet
@@ -349,6 +310,7 @@ const CalendarBottomSheet = ({
             refreshControl={null}
             refreshing={isLoading}
             loadItemsForMonth={loadItemsForMonth}
+            refreshing={false}
             style={{
               backgroundColor: isDarkMode ? '#1c1c1e' : 'white'
             }}

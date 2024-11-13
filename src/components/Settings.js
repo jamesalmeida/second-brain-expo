@@ -15,7 +15,7 @@ import CalendarSettings from './settings/CalendarSettings';
 import SettingsNestedMenu from './settings/SettingsNestedMenu';
 import AIModelsSettings from './settings/AIModelsSettings';
 
-const Settings = ({ bottomSheetRef, snapPoints, handleSheetChanges, renderBackdrop }) => {
+const Settings = ({ bottomSheetRef, snapPoints, renderBackdrop }) => {
   const { isDarkMode, themePreference, setTheme } = useTheme();
   const { 
     apiKey, setApiKey, 
