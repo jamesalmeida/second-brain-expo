@@ -21,6 +21,8 @@ const CalendarSettings = ({
   const [currentMenu, setCurrentMenu] = useState('main');
   const [selectedTimezone, setSelectedTimezone] = useState('');
   const [calendarCount, setCalendarCount] = useState({ active: 0, total: 0 });
+  const [calendars, setCalendars] = useState([]);
+  const [defaultCalendar, setDefaultCalendar] = useState(null);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -28,22 +30,46 @@ const CalendarSettings = ({
       const saved = await AsyncStorage.getItem('selectedTimezone');
       setSelectedTimezone(saved || moment.tz.guess());
 
-      // Load calendar counts
-      const calendars = await CalendarService.getCalendars();
-      const savedVisibility = await AsyncStorage.getItem('calendar_visibility');
-      const visibilitySettings = savedVisibility ? JSON.parse(savedVisibility) : {};
+      // Load calendars and default calendar
+      const fetchedCalendars = await CalendarService.getCalendars();
+      const savedDefault = await AsyncStorage.getItem('default_calendar_id');
       
-      const totalCalendars = calendars.length;
-      const activeCalendars = calendars.filter(cal => visibilitySettings[cal.id] !== false).length;
-      
-      setCalendarCount({
-        active: activeCalendars,
-        total: totalCalendars
-      });
+      if (fetchedCalendars && !fetchedCalendars.error) {
+        setCalendars(fetchedCalendars);
+        
+        // Find default calendar
+        if (savedDefault) {
+          const defaultCal = fetchedCalendars.find(cal => cal.id === savedDefault);
+          setDefaultCalendar(defaultCal || null);
+        }
+
+        // Load calendar counts
+        const savedVisibility = await AsyncStorage.getItem('calendar_visibility');
+        const visibilitySettings = savedVisibility ? JSON.parse(savedVisibility) : {};
+        
+        const totalCalendars = fetchedCalendars.length;
+        const activeCalendars = fetchedCalendars.filter(cal => visibilitySettings[cal.id] !== false).length;
+        
+        setCalendarCount({
+          active: activeCalendars,
+          total: totalCalendars
+        });
+      }
     };
     
     loadSettings();
-  }, [currentMenu]); // Reload when returning from submenus
+  }, [currentMenu]);
+
+  const handleCalendarSelect = async (calendar) => {
+    try {
+      const result = await CalendarService.setDefaultCalendar(calendar.title);
+      if (result.success) {
+        setDefaultCalendar(calendar);
+      }
+    } catch (error) {
+      console.error('Error setting default calendar:', error);
+    }
+  };
 
   const handleTimezoneChange = (newTimezone) => {
     setSelectedTimezone(newTimezone);
@@ -57,6 +83,38 @@ const CalendarSettings = ({
       setCurrentMenu('main');
     }
   };
+
+  if (currentMenu === 'selectDefault') {
+    return (
+      <SettingsNestedMenu title="Select Default Calendar" onBack={() => setCurrentMenu('main')} isDarkMode={isDarkMode}>
+        <View style={styles.container}>
+          {calendars.map(calendar => (
+            <TouchableOpacity
+              key={calendar.id}
+              style={[
+                styles.settingItem,
+                { borderBottomColor: borderColor },
+                defaultCalendar?.id === calendar.id && styles.selectedCalendar
+              ]}
+              onPress={() => handleCalendarSelect(calendar)}
+            >
+              <View style={styles.calendarInfo}>
+                <Text style={[styles.calendarTitle, { color: textColor }]}>
+                  {calendar.title}
+                </Text>
+                <Text style={[styles.calendarSource, { color: textColor + '80' }]}>
+                  {calendar.source}
+                </Text>
+              </View>
+              {defaultCalendar?.id === calendar.id && (
+                <Ionicons name="checkmark" size={24} color="#007AFF" />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </SettingsNestedMenu>
+    );
+  }
 
   if (currentMenu === 'selectCalendars') {
     return (
@@ -103,18 +161,33 @@ const CalendarSettings = ({
         </View>
 
         {hasCalendarPermission && (
-          <TouchableOpacity 
-            style={[styles.settingItem, { borderBottomColor: borderColor }]}
-            onPress={() => setCurrentMenu('selectCalendars')}
-          >
-            <Text style={{ color: textColor }}>Select Calendars</Text>
-            <View style={styles.settingItemContent}>
-              <Text style={{ color: isDarkMode ? '#666666' : '#999999' }}>
-                {calendarCount.active} of {calendarCount.total} active
-              </Text>
-              <Ionicons name="chevron-forward" size={24} color={textColor} />
-            </View>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity 
+              style={[styles.settingItem, { borderBottomColor: borderColor }]}
+              onPress={() => setCurrentMenu('selectDefault')}
+            >
+              <Text style={{ color: textColor }}>Default Calendar</Text>
+              <View style={styles.settingItemContent}>
+                <Text style={{ color: isDarkMode ? '#666666' : '#999999' }}>
+                  {defaultCalendar?.title || 'None selected'}
+                </Text>
+                <Ionicons name="chevron-forward" size={24} color={textColor} />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.settingItem, { borderBottomColor: borderColor }]}
+              onPress={() => setCurrentMenu('selectCalendars')}
+            >
+              <Text style={{ color: textColor }}>Select Calendars</Text>
+              <View style={styles.settingItemContent}>
+                <Text style={{ color: isDarkMode ? '#666666' : '#999999' }}>
+                  {calendarCount.active} of {calendarCount.total} active
+                </Text>
+                <Ionicons name="chevron-forward" size={24} color={textColor} />
+              </View>
+            </TouchableOpacity>
+          </>
         )}
 
         <TouchableOpacity 
@@ -169,6 +242,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  selectedCalendar: {
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+  },
+  calendarInfo: {
+    flex: 1,
+  },
+  calendarTitle: {
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  calendarSource: {
+    fontSize: 12,
   }
 });
 
