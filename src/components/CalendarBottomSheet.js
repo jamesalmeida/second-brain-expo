@@ -63,8 +63,8 @@ const CalendarBottomSheet = ({
       createNewChat(newSelectedDate);
     }
 
-    setSelectedDate(newSelectedDate); // Ensure this is a Date object
-
+    setSelectedDate(newSelectedDate);
+    
     // Load events for the selected month
     const month = {
       timestamp: newSelectedDate.getTime()
@@ -262,6 +262,23 @@ const CalendarBottomSheet = ({
     );
   };
 
+  const handleTodayPress = () => {
+    const todayMoment = moment().tz(timezone);
+    const todayDate = todayMoment.toDate();
+    const todayStr = todayMoment.format('YYYY-MM-DD');
+    
+    // Check for existing chat first
+    const existingChat = getChatByDate(todayDate);
+    
+    if (existingChat) {
+      setCurrentChatId(todayStr);
+    } else {
+      createNewChat(todayDate);
+    }
+    
+    setSelectedDate(todayDate);
+  };
+
   return (
     <Portal>
       <BottomSheet
@@ -280,7 +297,7 @@ const CalendarBottomSheet = ({
               name="today-outline" 
               size={24} 
               color={isDarkMode ? 'white' : 'black'} 
-              onPress={() => setSelectedDate(new Date())}
+              onPress={handleTodayPress}
             />
             <Text style={[
               styles.monthHeader, 

@@ -93,14 +93,27 @@ export const ChatProvider = ({ children }) => {
     const initializeChats = async () => {
       await ensureChatDirectoryExists();
       const loadedChats = await loadChats();
+      
+      // Get today's date string in YYYY-MM-DD format
+      const today = moment().tz(timezone).format('YYYY-MM-DD');
+      
       if (loadedChats.length > 0) {
         setChats(loadedChats);
-        setCurrentChatId(loadedChats[loadedChats.length - 1].id);
+        // Check if there's a chat for today
+        const todayChat = loadedChats.find(chat => chat.id === today);
+        if (todayChat) {
+          setCurrentChatId(today);
+        } else {
+          // Create new chat for today but don't add to chats yet
+          const { id } = createNewChat();
+          setCurrentChatId(id);
+        }
       } else {
-        // Just create the ID and model, but don't add to chats yet
+        // Just create the ID for today and set it
         const { id } = createNewChat();
         setCurrentChatId(id);
       }
+      
       fetchAvailableModels();
       loadApiKeySettings();
       await Promise.all([
@@ -244,6 +257,12 @@ export const ChatProvider = ({ children }) => {
       model: defaultModel,
       date: momentDate.toISOString()
     };
+    
+    // Add the new chat to the chats array
+    setChats(prevChats => {
+      const updatedChats = [...prevChats, newChat];
+      return updatedChats.sort((a, b) => b.id.localeCompare(a.id));
+    });
     
     setCurrentChatId(dateStr);
     return newChat;
