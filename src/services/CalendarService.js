@@ -239,14 +239,48 @@ export const CalendarService = {
   setDefaultCalendar: async (calendarName) => {
     try {
         const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-        const matchingCalendar = calendars.find(cal => 
-            cal.title.toLowerCase().includes(calendarName.toLowerCase())
+        
+        // First try exact match (case-insensitive)
+        let matchingCalendar = calendars.find(cal => 
+            cal.title.toLowerCase() === calendarName.toLowerCase()
         );
 
+        // If no exact match, try includes (case-insensitive)
         if (!matchingCalendar) {
+            matchingCalendar = calendars.find(cal => 
+                cal.title.toLowerCase().includes(calendarName.toLowerCase())
+            );
+        }
+
+        // If still no match, try finding the closest match
+        if (!matchingCalendar && calendars.length > 0) {
+            const calendarOptions = calendars.map(cal => ({
+                title: cal.title,
+                distance: levenshteinDistance(calendarName.toLowerCase(), cal.title.toLowerCase()),
+                calendar: cal
+            }));
+
+            // Sort by distance (lowest first) and get the best match
+            const bestMatch = calendarOptions.sort((a, b) => a.distance - b.distance)[0];
+            
+            // Only use the best match if it's reasonably close (distance less than half the length of the input)
+            if (bestMatch.distance < calendarName.length / 2) {
+                matchingCalendar = bestMatch.calendar;
+                return {
+                    success: true,
+                    message: `Did you mean "${bestMatch.title}"? I've set it as your default calendar.`
+                };
+            }
+        }
+
+        if (!matchingCalendar) {
+            let errorMessage = `No calendar found matching "${calendarName}".\nAvailable calendars:\n`;
+            calendars.forEach(cal => {
+                errorMessage += `- ${cal.title}\n`;
+            });
             return {
                 success: false,
-                message: `No calendar found matching "${calendarName}"`
+                message: errorMessage
             };
         }
 
@@ -278,4 +312,26 @@ export const CalendarService = {
         return null;
     }
   }
+};
+
+// Helper function to calculate Levenshtein distance between two strings
+const levenshteinDistance = (str1, str2) => {
+    const track = Array(str2.length + 1).fill(null).map(() =>
+        Array(str1.length + 1).fill(null));
+    
+    for (let i = 0; i <= str1.length; i++) track[0][i] = i;
+    for (let j = 0; j <= str2.length; j++) track[j][0] = j;
+
+    for (let j = 1; j <= str2.length; j++) {
+        for (let i = 1; i <= str1.length; i++) {
+            const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+            track[j][i] = Math.min(
+                track[j][i - 1] + 1,
+                track[j - 1][i] + 1,
+                track[j - 1][i - 1] + indicator
+            );
+        }
+    }
+
+    return track[str2.length][str1.length];
 };
