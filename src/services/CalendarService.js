@@ -77,55 +77,78 @@ export const CalendarService = {
 
   createEvent: async (eventDetails) => {
     try {
-      const { status } = await Calendar.getCalendarPermissionsAsync();
-      if (status !== 'granted') {
-        return { 
-          success: false, 
-          message: 'Calendar permission not granted' 
+        const { status } = await Calendar.getCalendarPermissionsAsync();
+        if (status !== 'granted') {
+            return { 
+                success: false, 
+                message: 'Calendar permission not granted' 
+            };
+        }
+
+        // Get visibility settings
+        const savedVisibility = await AsyncStorage.getItem('calendar_visibility');
+        const visibilitySettings = savedVisibility ? JSON.parse(savedVisibility) : {};
+
+        // Get calendars and filter for visible ones
+        const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+        const visibleCalendars = calendars.filter(cal => visibilitySettings[cal.id] !== false);
+
+        if (visibleCalendars.length === 0) {
+            return { 
+                success: false, 
+                message: 'No visible calendars found. Please enable at least one calendar in settings.' 
+            };
+        }
+
+        // Try to find the primary calendar among visible calendars
+        const primaryCalendar = visibleCalendars.find(cal => cal.isPrimary);
+        const defaultCalendar = primaryCalendar || visibleCalendars[0];
+
+        let startDate = new Date(eventDetails.startDate);
+        let endDate = new Date(eventDetails.endDate);
+
+        if (eventDetails.isAllDay) {
+            // For all-day events, set the times to midnight
+            startDate.setHours(0, 0, 0, 0);
+            // For all-day events, end date should be midnight of the next day
+            endDate.setHours(0, 0, 0, 0);
+            endDate.setDate(endDate.getDate() + 1);
+        } else {
+            // Only adjust non-all-day events that are in the past
+            const now = new Date();
+            if (startDate < now) {
+                startDate = new Date(now);
+                startDate.setDate(startDate.getDate() + 1);
+                startDate.setHours(0, 0, 0, 0);
+                
+                endDate = new Date(startDate);
+                endDate.setHours(23, 59, 59, 999);
+            }
+        }
+
+        const event = {
+            title: eventDetails.title,
+            startDate: startDate,
+            endDate: endDate,
+            allDay: eventDetails.isAllDay,
+            location: eventDetails.location || '',
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            calendarId: defaultCalendar.id
         };
-      }
 
-      // Get visibility settings
-      const savedVisibility = await AsyncStorage.getItem('calendar_visibility');
-      const visibilitySettings = savedVisibility ? JSON.parse(savedVisibility) : {};
-
-      // Get calendars and filter for visible ones
-      const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-      const visibleCalendars = calendars.filter(cal => visibilitySettings[cal.id] !== false);
-
-      if (visibleCalendars.length === 0) {
+        const eventId = await Calendar.createEventAsync(defaultCalendar.id, event);
         return { 
-          success: false, 
-          message: 'No visible calendars found. Please enable at least one calendar in settings.' 
+            success: true, 
+            message: 'Event created successfully',
+            eventId 
         };
-      }
-
-      // Try to find the primary calendar among visible calendars
-      const primaryCalendar = visibleCalendars.find(cal => cal.isPrimary);
-      const defaultCalendar = primaryCalendar || visibleCalendars[0];
-
-      const event = {
-        title: eventDetails.title,
-        startDate: new Date(eventDetails.startDate),
-        endDate: new Date(eventDetails.endDate),
-        location: eventDetails.location || '',
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        calendarId: defaultCalendar.id
-      };
-
-      const eventId = await Calendar.createEventAsync(defaultCalendar.id, event);
-      return { 
-        success: true, 
-        message: 'Event created successfully',
-        eventId 
-      };
 
     } catch (error) {
-      console.error('Error creating calendar event:', error);
-      return { 
-        success: false, 
-        message: 'Failed to create event' 
-      };
+        console.error('Error creating calendar event:', error);
+        return { 
+            success: false, 
+            message: 'Failed to create event' 
+        };
     }
   },
 

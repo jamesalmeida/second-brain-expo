@@ -57,6 +57,10 @@ export const calendarFunctions = [
             type: "string",
             description: "The title or name of the event"
             },
+            isAllDay: {
+                type: "boolean",
+                description: "Whether this is an all-day event without specific start/end times"
+            },
             startDate: {
             type: "string",
             description: "The start date and time of the event in ISO format. Must be based on currentDateTime for relative times like 'tomorrow' or 'next week'"
@@ -70,7 +74,7 @@ export const calendarFunctions = [
             description: "The location of the event (optional)"
             }
         },
-        required: ["shouldCreateEvent", "currentDateTime", "title", "startDate", "endDate"]
+        required: ["shouldCreateEvent", "currentDateTime", "title", "startDate", "endDate", "isAllDay"]
         }
     }
 ];

@@ -751,7 +751,7 @@ export const ChatProvider = ({ children }) => {
           const tomorrow = new Date(now);
           tomorrow.setDate(tomorrow.getDate() + 1);
           
-          if (startDate < now) {
+          if (!functionArgs.isAllDay && startDate < now) {
             console.warn('Start date is in the past, adjusting to tomorrow:', {
               original: startDate,
               adjusted: tomorrow
@@ -775,7 +775,11 @@ export const ChatProvider = ({ children }) => {
           
           let responseMessage;
           if (result.success) {
-            responseMessage = `✅ Event created successfully!\n\n📅 ${functionArgs.title}\n⏰ ${new Date(functionArgs.startDate).toLocaleString()} - ${new Date(functionArgs.endDate).toLocaleString()}\n${functionArgs.location ? `📍 ${functionArgs.location}` : ''}`;
+            if (functionArgs.isAllDay) {
+                responseMessage = `✅ Event created successfully!\n\n📅 ${functionArgs.title}\n📆 All day event on ${new Date(functionArgs.startDate).toLocaleDateString()}\n${functionArgs.location ? `📍 ${functionArgs.location}` : ''}`;
+            } else {
+                responseMessage = `✅ Event created successfully!\n\n📅 ${functionArgs.title}\n⏰ ${new Date(functionArgs.startDate).toLocaleString()} - ${new Date(functionArgs.endDate).toLocaleString()}\n${functionArgs.location ? `📍 ${functionArgs.location}` : ''}`;
+            }
           } else {
             responseMessage = `❌ ${result.message}`;
           }
