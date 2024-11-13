@@ -416,9 +416,6 @@ const Settings = ({ bottomSheetRef, snapPoints, renderBackdrop }) => {
           >
             <Text style={{ color: textColor }}>AI Models</Text>
             <View style={styles.settingItemContent}>
-              <Text style={{ color: isDarkMode ? '#666666' : '#999999' }}>
-                {availableModels.filter(model => !hiddenModels.includes(model.name)).length} of {availableModels.length} active
-              </Text>
               <Ionicons name="chevron-forward" size={24} color={textColor} />
             </View>
           </TouchableOpacity>

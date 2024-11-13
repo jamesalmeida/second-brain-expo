@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SettingsNestedMenu from './SettingsNestedMenu';
 import { useChat } from '../../contexts/ChatContext';
+import ShowHideModels from './ShowHideModels';
+import DefaultModelSelector from './DefaultModelSelector';
 
 const AIModelsSettings = ({ 
   isDarkMode,
@@ -10,64 +12,67 @@ const AIModelsSettings = ({
   borderColor,
   onBack
 }) => {
-  const { 
-    availableModels,
-    defaultModel,
-    saveDefaultModel,
-    hiddenModels,
-    toggleModelVisibility
-  } = useChat();
+  const [currentMenu, setCurrentMenu] = React.useState('main');
+  const { availableModels, hiddenModels, defaultModel } = useChat();
 
-  // Calculate active models count
-  const modelCount = {
-    active: availableModels.filter(model => !hiddenModels.includes(model.name)).length,
-    total: availableModels.length
+  const handleBack = () => {
+    if (currentMenu === 'main') {
+      onBack();
+    } else {
+      setCurrentMenu('main');
+    }
   };
 
+  if (currentMenu === 'showhide') {
+    return (
+      <ShowHideModels
+        isDarkMode={isDarkMode}
+        textColor={textColor}
+        borderColor={borderColor}
+        onBack={() => setCurrentMenu('main')}
+      />
+    );
+  }
+
+  if (currentMenu === 'default') {
+    return (
+      <DefaultModelSelector
+        isDarkMode={isDarkMode}
+        textColor={textColor}
+        borderColor={borderColor}
+        onBack={() => setCurrentMenu('main')}
+      />
+    );
+  }
+
   return (
-    <SettingsNestedMenu title="AI Models" onBack={onBack} isDarkMode={isDarkMode}>
+    <SettingsNestedMenu title="AI Models" onBack={handleBack} isDarkMode={isDarkMode}>
       <View style={styles.container}>
-        {availableModels.map((model) => (
-          <TouchableOpacity
-            key={model.id}
-            style={[
-              styles.modelItem,
-              { borderBottomColor: borderColor },
-              defaultModel === model.name && styles.selectedModel
-            ]}
-            onPress={() => !hiddenModels.includes(model.name) && saveDefaultModel(model.name)}
-          >
-            <View style={styles.modelInfo}>
-              <Text style={[
-                styles.modelName, 
-                { 
-                  color: textColor,
-                  opacity: hiddenModels.includes(model.name) ? 0.5 : 1 
-                }
-              ]}>
-                {model.name}
-              </Text>
-              {defaultModel === model.name && (
-                <Text style={[styles.modelDescription, { color: textColor + '80' }]}>
-                  Default model for new chats
-                </Text>
-              )}
-            </View>
-            <View style={styles.controls}>
-              {defaultModel === model.name && (
-                <Ionicons name="checkmark" size={24} color="#007AFF" style={styles.checkmark} />
-              )}
-              <Switch
-                value={!hiddenModels.includes(model.name)}
-                onValueChange={() => toggleModelVisibility(model.name)}
-                disabled={defaultModel === model.name}
-                trackColor={{ false: '#e9e9ea', true: '#34c759' }}
-                thumbColor={'#ffffff'}
-                ios_backgroundColor="#e9e9ea"
-              />
-            </View>
-          </TouchableOpacity>
-        ))}
+        <TouchableOpacity
+          style={[styles.settingItem, { borderBottomColor: borderColor }]}
+          onPress={() => setCurrentMenu('showhide')}
+        >
+          <Text style={{ color: textColor }}>Show/Hide AI Models</Text>
+          <View style={styles.settingItemContent}>
+            <Text style={{ color: isDarkMode ? '#666666' : '#999999' }}>
+              {availableModels.filter(model => !hiddenModels.includes(model.name)).length} of {availableModels.length} active
+            </Text>
+            <Ionicons name="chevron-forward" size={24} color={textColor} />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.settingItem, { borderBottomColor: borderColor }]}
+          onPress={() => setCurrentMenu('default')}
+        >
+          <Text style={{ color: textColor }}>Choose Default AI Model</Text>
+          <View style={styles.settingItemContent}>
+            <Text style={{ color: isDarkMode ? '#666666' : '#999999' }}>
+              {defaultModel}
+            </Text>
+            <Ionicons name="chevron-forward" size={24} color={textColor} />
+          </View>
+        </TouchableOpacity>
       </View>
     </SettingsNestedMenu>
   );
@@ -78,34 +83,18 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
-  modelItem: {
+  settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 15,
     borderBottomWidth: 1,
   },
-  modelInfo: {
-    flex: 1,
-  },
-  modelName: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  modelDescription: {
-    fontSize: 12,
-  },
-  selectedModel: {
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-  },
-  controls: {
+  settingItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
-  checkmark: {
-    marginRight: 10,
-  }
 });
 
 export default AIModelsSettings;
