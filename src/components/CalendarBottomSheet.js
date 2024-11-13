@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Portal } from '@gorhom/portal';
 import { Calendar, Agenda } from 'react-native-calendars';
@@ -53,21 +53,11 @@ const CalendarBottomSheet = ({
 
     setSelectedDate(selectedDate);
 
-    // Set loading state and clear existing events for the selected date
-    setIsLoading(true);
-    setEvents(prevEvents => ({
-      ...prevEvents,
-      [dateStr]: []
-    }));
-
     // Load events for the selected month
     const month = {
       timestamp: selectedDate.getTime()
     };
     await loadItemsForMonth(month);
-    
-    // Ensure we're setting loading back to false
-    setIsLoading(false);
   };
 
   // Format the date for the calendar
@@ -240,17 +230,6 @@ const CalendarBottomSheet = ({
   };
 
   const renderEmptyDate = () => {
-    if (isLoading) {
-      return (
-        <View style={[styles.emptyDate, { backgroundColor: isDarkMode ? '#2c2c2e' : '#f2f2f7' }]}>
-          <ActivityIndicator color={isDarkMode ? '#ffffff' : '#000000'} />
-          <Text style={[styles.loadingText, { color: isDarkMode ? '#ffffff80' : '#00000080' }]}>
-            Loading events...
-          </Text>
-        </View>
-      );
-    }
-
     return (
       <View style={[styles.emptyDate, { backgroundColor: isDarkMode ? '#2c2c2e' : '#f2f2f7' }]}>
         <Text style={{ color: isDarkMode ? '#ffffff80' : '#00000080' }}>
@@ -424,10 +403,6 @@ const styles = StyleSheet.create({
     marginTop: 17,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 8,
-    fontSize: 14,
   }
 });
 
