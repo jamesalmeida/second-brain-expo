@@ -879,6 +879,54 @@ export const ChatProvider = ({ children }) => {
             setChats(updatedChatsWithAIResponse);
             return;
           }
+        } else if (functionCall.name === "listCalendars" && functionArgs.shouldListCalendars) {
+            console.log('Listing calendars');
+            const calendars = await CalendarService.getCalendars();
+            
+            let responseMessage;
+            if (calendars.error) {
+                responseMessage = calendars.error;
+            } else {
+                responseMessage = "Here are your available calendars:\n\n";
+                calendars.forEach(calendar => {
+                    const status = calendar.isVisible ? '✅' : '❌';
+                    responseMessage += `${status} ${calendar.title}\n`;
+                    if (calendar.isPrimary) {
+                        responseMessage += "   📌 Primary Calendar\n";
+                    }
+                    responseMessage += `   📱 Source: ${calendar.source}\n\n`;
+                });
+                responseMessage += "\nYou can enable/disable calendars in Settings → Calendar Settings → Select Calendars";
+            }
+
+            const updatedChatsWithResponse = updatedChatsWithUserMessage.map(chat => 
+                chat.id === currentChatId 
+                    ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: responseMessage }] }
+                    : chat
+            );
+            setChats(updatedChatsWithResponse);
+            
+            const updatedChat = updatedChatsWithResponse.find(chat => chat.id === currentChatId);
+            await saveChat(updatedChat);
+        } else if (functionCall.name === "setDefaultCalendar" && functionArgs.shouldSetDefault) {
+          console.log('Setting default calendar:', functionArgs.calendarName);
+          const result = await CalendarService.setDefaultCalendar(functionArgs.calendarName);
+          
+          const responseMessage = result.success
+            ? `✅ ${result.message}`
+            : `❌ ${result.message}`;
+
+          const updatedChatsWithResponse = updatedChatsWithUserMessage.map(chat => 
+            chat.id === currentChatId 
+              ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: responseMessage }] }
+              : chat
+          );
+          setChats(updatedChatsWithResponse);
+          
+          const updatedChat = updatedChatsWithResponse.find(chat => chat.id === currentChatId);
+          await saveChat(updatedChat);
+          setIsLoading(false);
+          return;
         }
       } else {
         const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';

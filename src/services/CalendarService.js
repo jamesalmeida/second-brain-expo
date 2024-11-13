@@ -100,48 +100,77 @@ export const CalendarService = {
             };
         }
 
-        // Try to find the primary calendar among visible calendars
-        const primaryCalendar = visibleCalendars.find(cal => cal.isPrimary);
-        const defaultCalendar = primaryCalendar || visibleCalendars[0];
+        const defaultCalendar = await CalendarService.getDefaultCalendar();
+        if (defaultCalendar) {
+            // Use the default calendar if it's set
+            const event = {
+                title: eventDetails.title,
+                startDate: startDate,
+                endDate: endDate,
+                allDay: eventDetails.isAllDay,
+                location: eventDetails.location || '',
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                calendarId: defaultCalendar.id
+            };
 
-        let startDate = new Date(eventDetails.startDate);
-        let endDate = new Date(eventDetails.endDate);
-
-        if (eventDetails.isAllDay) {
-            // For all-day events, set the times to midnight
-            startDate.setHours(0, 0, 0, 0);
-            // For all-day events, end date should be midnight of the next day
-            endDate.setHours(0, 0, 0, 0);
-            endDate.setDate(endDate.getDate() + 1);
+            const eventId = await Calendar.createEventAsync(defaultCalendar.id, event);
+            return { 
+                success: true, 
+                message: 'Event created successfully',
+                eventId 
+            };
         } else {
-            // Only adjust non-all-day events that are in the past
-            const now = new Date();
-            if (startDate < now) {
-                startDate = new Date(now);
-                startDate.setDate(startDate.getDate() + 1);
-                startDate.setHours(0, 0, 0, 0);
-                
-                endDate = new Date(startDate);
-                endDate.setHours(23, 59, 59, 999);
+            // Fall back to existing logic of finding primary or first visible calendar
+            const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+            const primaryCalendar = calendars.find(cal => cal.isPrimary);
+            const defaultCalendar = primaryCalendar || calendars[0];
+            
+            if (!defaultCalendar) {
+                return { 
+                    success: false, 
+                    message: 'No calendars found. Please add a calendar to your device.' 
+                };
             }
+
+            let startDate = new Date(eventDetails.startDate);
+            let endDate = new Date(eventDetails.endDate);
+
+            if (eventDetails.isAllDay) {
+                // For all-day events, set the times to midnight
+                startDate.setHours(0, 0, 0, 0);
+                // For all-day events, end date should be midnight of the next day
+                endDate.setHours(0, 0, 0, 0);
+                endDate.setDate(endDate.getDate() + 1);
+            } else {
+                // Only adjust non-all-day events that are in the past
+                const now = new Date();
+                if (startDate < now) {
+                    startDate = new Date(now);
+                    startDate.setDate(startDate.getDate() + 1);
+                    startDate.setHours(0, 0, 0, 0);
+                    
+                    endDate = new Date(startDate);
+                    endDate.setHours(23, 59, 59, 999);
+                }
+            }
+
+            const event = {
+                title: eventDetails.title,
+                startDate: startDate,
+                endDate: endDate,
+                allDay: eventDetails.isAllDay,
+                location: eventDetails.location || '',
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                calendarId: defaultCalendar.id
+            };
+
+            const eventId = await Calendar.createEventAsync(defaultCalendar.id, event);
+            return { 
+                success: true, 
+                message: 'Event created successfully',
+                eventId 
+            };
         }
-
-        const event = {
-            title: eventDetails.title,
-            startDate: startDate,
-            endDate: endDate,
-            allDay: eventDetails.isAllDay,
-            location: eventDetails.location || '',
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            calendarId: defaultCalendar.id
-        };
-
-        const eventId = await Calendar.createEventAsync(defaultCalendar.id, event);
-        return { 
-            success: true, 
-            message: 'Event created successfully',
-            eventId 
-        };
 
     } catch (error) {
         console.error('Error creating calendar event:', error);
@@ -204,6 +233,49 @@ export const CalendarService = {
       await AsyncStorage.setItem('selectedCalendars', JSON.stringify(selections));
     } catch (error) {
       console.error('Error saving calendar selections:', error);
+    }
+  },
+
+  setDefaultCalendar: async (calendarName) => {
+    try {
+        const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+        const matchingCalendar = calendars.find(cal => 
+            cal.title.toLowerCase().includes(calendarName.toLowerCase())
+        );
+
+        if (!matchingCalendar) {
+            return {
+                success: false,
+                message: `No calendar found matching "${calendarName}"`
+            };
+        }
+
+        await AsyncStorage.setItem('default_calendar_id', matchingCalendar.id);
+        return {
+            success: true,
+            message: `Set "${matchingCalendar.title}" as your default calendar`
+        };
+    } catch (error) {
+        console.error('Error setting default calendar:', error);
+        return {
+            success: false,
+            message: 'Failed to set default calendar'
+        };
+    }
+  },
+
+  getDefaultCalendar: async () => {
+    try {
+        const defaultCalendarId = await AsyncStorage.getItem('default_calendar_id');
+        if (!defaultCalendarId) {
+            return null;
+        }
+
+        const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+        return calendars.find(cal => cal.id === defaultCalendarId);
+    } catch (error) {
+        console.error('Error getting default calendar:', error);
+        return null;
     }
   }
 };

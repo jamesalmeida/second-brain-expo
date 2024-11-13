@@ -1,3 +1,6 @@
+// When adding new fuctions here remember to also add some handling of the new function 
+// in the sendMessageToOpenAI function in ChatContext.js
+
 export const openAIImageGenerationFunctions = [
     {
       name: "generateDallEImage",
@@ -75,6 +78,38 @@ export const calendarFunctions = [
             }
         },
         required: ["shouldCreateEvent", "currentDateTime", "title", "startDate", "endDate", "isAllDay"]
+        }
+    },
+    {
+        name: "listCalendars",
+        description: "List all available calendars when user asks about their calendar options",
+        parameters: {
+            type: "object",
+            properties: {
+                shouldListCalendars: {
+                    type: "boolean",
+                    description: "Whether the user is asking to see their available calendars"
+                }
+            },
+            required: ["shouldListCalendars"]
+        }
+    },
+    {
+        name: "setDefaultCalendar",
+        description: "Set a specific calendar as the default for new events",
+        parameters: {
+            type: "object",
+            properties: {
+                shouldSetDefault: {
+                    type: "boolean",
+                    description: "Whether the user wants to set a default calendar"
+                },
+                calendarName: {
+                    type: "string",
+                    description: "The name or partial name of the calendar to set as default"
+                }
+            },
+            required: ["shouldSetDefault", "calendarName"]
         }
     }
 ];
