@@ -15,7 +15,7 @@ const Header = ({ navigation, selectedDate, setSelectedDate }) => {
   const calendarSnapPoints = ['93%'];
   const [timezone, setTimezone] = useState(moment.tz.guess());
   const chatInfoSheetRef = useRef(null);
-  const chatInfoSnapPoints = ['65%'];
+  const chatInfoSnapPoints = ['70%'];
 
   useEffect(() => {
     const loadTimezone = async () => {
