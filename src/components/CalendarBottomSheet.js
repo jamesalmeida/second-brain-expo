@@ -27,16 +27,16 @@ const CalendarBottomSheet = ({
   const [isEventModalVisible, setIsEventModalVisible] = useState(false);
 
   // Enhanced console logs
-  useEffect(() => {
-    console.log('events in CalendarBottomSheet:', events);
-    console.log('isSheetOpen in CalendarBottomSheet:', isSheetOpen);
-    console.log('isLoading in CalendarBottomSheet:', isLoading);
-    console.log('selectedDate in CalendarBottomSheet:', selectedDate.toString());
-    console.log('currentChatId in CalendarBottomSheet:', currentChatId);
-    console.log('timezone in CalendarBottomSheet:', timezone);
-    console.log('Type of selectedDate:', typeof selectedDate); // Should print 'object'
-    console.log('Is selectedDate a Date instance?', selectedDate instanceof Date); // Should print true
-  }, [events, isSheetOpen, isLoading, selectedDate, currentChatId, timezone]);
+  // useEffect(() => {
+  //   console.log('events in CalendarBottomSheet:', events);
+  //   console.log('isSheetOpen in CalendarBottomSheet:', isSheetOpen);
+  //   console.log('isLoading in CalendarBottomSheet:', isLoading);
+  //   console.log('selectedDate in CalendarBottomSheet:', selectedDate.toString());
+  //   console.log('currentChatId in CalendarBottomSheet:', currentChatId);
+  //   console.log('timezone in CalendarBottomSheet:', timezone);
+  //   console.log('Type of selectedDate:', typeof selectedDate); // Should print 'object'
+  //   console.log('Is selectedDate a Date instance?', selectedDate instanceof Date); // Should print true
+  // }, [events, isSheetOpen, isLoading, selectedDate, currentChatId, timezone]);
 
   useEffect(() => {
     // Load saved timezone
