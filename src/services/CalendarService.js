@@ -54,6 +54,7 @@ export const CalendarService = {
       return events
         .flat()
         .map(event => ({
+          id: event.id,
           title: event.title,
           startTime: new Date(event.startDate).toLocaleTimeString([], { 
             hour: '2-digit', 
@@ -65,7 +66,10 @@ export const CalendarService = {
           }),
           date: new Date(event.startDate).toLocaleDateString(),
           startDate: event.startDate,
-          location: event.location || 'No location specified'
+          endDate: event.endDate,
+          location: event.location || 'No location specified',
+          allDay: event.allDay,
+          calendarId: event.calendarId
         }))
         .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 

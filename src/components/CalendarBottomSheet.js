@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Portal } from '@gorhom/portal';
 import { Calendar, Agenda } from 'react-native-calendars';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment-timezone';
+import EventEditModal from './EventEditModal';
 
 const CalendarBottomSheet = ({ 
   bottomSheetRef, 
@@ -22,6 +23,8 @@ const CalendarBottomSheet = ({
   const [isLoading, setIsLoading] = useState(false);
   const { getChatByDate, createNewChat, currentChatId, setCurrentChatId } = useChat();
   const [timezone, setTimezone] = useState(moment.tz.guess());
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isEventModalVisible, setIsEventModalVisible] = useState(false);
 
   // Enhanced console logs
   useEffect(() => {
@@ -236,19 +239,26 @@ const CalendarBottomSheet = ({
 
   const renderItem = (item) => {
     return (
-      <View style={[styles.item, { backgroundColor: isDarkMode ? '#2c2c2e' : '#f2f2f7' }]}>
-        <Text style={[styles.itemText, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
-          {item.title}
-        </Text>
-        <Text style={[styles.itemTime, { color: isDarkMode ? '#ffffff80' : '#00000080' }]}>
-          {item.startTime} - {item.endTime}
-        </Text>
-        {item.location && (
-          <Text style={[styles.itemLocation, { color: isDarkMode ? '#ffffff80' : '#00000080' }]}>
-            📍 {item.location}
+      <TouchableOpacity
+        onPress={() => {
+          setSelectedEvent(item);
+          setIsEventModalVisible(true);
+        }}
+      >
+        <View style={[styles.item, { backgroundColor: isDarkMode ? '#2c2c2e' : '#f2f2f7' }]}>
+          <Text style={[styles.itemText, { color: isDarkMode ? '#ffffff' : '#000000' }]}>
+            {item.title}
           </Text>
-        )}
-      </View>
+          <Text style={[styles.itemTime, { color: isDarkMode ? '#ffffff80' : '#00000080' }]}>
+            {item.startTime} - {item.endTime}
+          </Text>
+          {item.location && item.location !== 'No location specified' && (
+            <Text style={[styles.itemLocation, { color: isDarkMode ? '#ffffff80' : '#00000080' }]}>
+              📍 {item.location}
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -277,6 +287,15 @@ const CalendarBottomSheet = ({
     }
     
     setSelectedDate(todayDate);
+  };
+
+  const loadEvents = async () => {
+    setIsLoading(true);
+    const month = {
+      timestamp: selectedDate.getTime()
+    };
+    await loadItemsForMonth(month);
+    setIsLoading(false);
   };
 
   return (
@@ -337,6 +356,18 @@ const CalendarBottomSheet = ({
           />
         </BottomSheetView>
       </BottomSheet>
+      <EventEditModal
+        isVisible={isEventModalVisible}
+        onClose={async (shouldRefresh) => {
+          setIsEventModalVisible(false);
+          if (shouldRefresh) {
+            await loadEvents();
+          }
+        }}
+        event={selectedEvent}
+        isDarkMode={isDarkMode}
+        timezone={timezone}
+      />
     </Portal>
   );
 };
