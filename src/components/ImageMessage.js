@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import Animated, { 
   useAnimatedStyle, 
@@ -46,11 +46,42 @@ const ImageMessage = ({
     }
   }, [isFlipped]);
 
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
   const handlePress = () => {
-    if (!isFlipped) {
-      onFlip(message);
-    }
+    setIsFullScreen(true);
   };
+
+  const handleCloseFullScreen = () => {
+    setIsFullScreen(false);
+  };
+
+  const FullScreenImage = () => (
+    <Modal
+      visible={isFullScreen}
+      transparent={true}
+      onRequestClose={handleCloseFullScreen}
+    >
+      <TouchableOpacity 
+        style={styles.fullScreenContainer} 
+        activeOpacity={1} 
+        onPress={handleCloseFullScreen}
+      >
+        <ExpoImage
+          source={{ uri: srcMatch[1] }}
+          style={styles.fullScreenImage}
+          contentFit="contain"
+          transition={200}
+        />
+        <TouchableOpacity 
+          style={styles.closeFullScreenButton}
+          onPress={handleCloseFullScreen}
+        >
+          <Text style={styles.closeFullScreenText}>×</Text>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
 
   if (!srcMatch || !srcMatch[1]) return null;
 
@@ -136,6 +167,7 @@ const ImageMessage = ({
           </View>
         </Animated.View>
       </View>
+      <FullScreenImage />
     </TouchableOpacity>
   );
 };
@@ -239,6 +271,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#3A3A3C',
     lineHeight: 20,
+  },
+  fullScreenContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '100%',
+  },
+  closeFullScreenButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeFullScreenText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold',
   },
 });
 
