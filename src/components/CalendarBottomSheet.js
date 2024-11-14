@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Portal } from '@gorhom/portal';
 import { Calendar, Agenda } from 'react-native-calendars';
@@ -237,6 +237,28 @@ const CalendarBottomSheet = ({
     // }
   };
 
+  const openMaps = (location) => {
+    const encodedLocation = encodeURIComponent(location);
+    const scheme = Platform.select({
+      ios: 'maps:0,0?q=',
+      android: 'geo:0,0?q=',
+      default: 'https://www.google.com/maps/search/?api=1&query='
+    });
+    const url = Platform.select({
+      ios: `${scheme}${encodedLocation}`,
+      android: `${scheme}${encodedLocation}`,
+      default: `${scheme}${encodedLocation}`
+    });
+
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        console.log("Don't know how to open URI: " + url);
+      }
+    });
+  };
+
   const renderItem = (item) => {
     return (
       <TouchableOpacity
@@ -253,9 +275,14 @@ const CalendarBottomSheet = ({
             {item.startTime} - {item.endTime}
           </Text>
           {item.location && item.location !== 'No location specified' && (
-            <Text style={[styles.itemLocation, { color: isDarkMode ? '#ffffff80' : '#00000080' }]}>
-              📍 {item.location}
-            </Text>
+            <TouchableOpacity 
+              onPress={() => openMaps(item.location)}
+              style={styles.locationContainer}
+            >
+              <Text style={[styles.itemLocation, { color: isDarkMode ? '#007AFF' : '#007AFF' }]}>
+                📍 {item.location}
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
       </TouchableOpacity>
@@ -413,7 +440,10 @@ const styles = StyleSheet.create({
     marginTop: 17,
     justifyContent: 'center',
     alignItems: 'center',
-  }
+  },
+  locationContainer: {
+    marginTop: 4,
+  },
 });
 
 export default CalendarBottomSheet;

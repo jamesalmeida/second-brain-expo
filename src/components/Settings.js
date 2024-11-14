@@ -14,6 +14,7 @@ import APISettings from './settings/APIKeySettings';
 import CalendarSettings from './settings/CalendarSettings';
 import SettingsNestedMenu from './settings/SettingsNestedMenu';
 import AIModelsSettings from './settings/AIModelsSettings';
+import LocationSettings from './settings/LocationSettings';
 
 const Settings = ({ bottomSheetRef, snapPoints, renderBackdrop }) => {
   const { isDarkMode, themePreference, setTheme } = useTheme();
@@ -276,15 +277,6 @@ const Settings = ({ bottomSheetRef, snapPoints, renderBackdrop }) => {
     setIsApiKeyFrozen(false);
   };
 
-  const slideToCalendarSettings = () => {
-    setCurrentMenu('calendar');
-    Animated.timing(slideAnim, {
-      toValue: -1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
   const slideBackToMain = () => {
     Animated.timing(slideAnim, {
       toValue: 0,
@@ -423,34 +415,22 @@ const Settings = ({ bottomSheetRef, snapPoints, renderBackdrop }) => {
           {/* Calendar Settings Button */}
           <TouchableOpacity 
             style={[styles.settingItem, { borderBottomColor: borderColor }]}
-            onPress={slideToCalendarSettings}
+            onPress={() => handleMenuTransition('calendar')}
           >
             <Text style={{ color: textColor }}>Calendar & Reminders Settings</Text>
             <Ionicons name="chevron-forward" size={24} color={textColor} />
           </TouchableOpacity>
 
-
-          {/* LOCATION ACCESS */}
-          <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
+          {/* LOCATION SETTINGS */}
+          <TouchableOpacity 
+            style={[styles.settingItem, { borderBottomColor: borderColor }]}
+            onPress={() => handleMenuTransition('location')}
+          >
+            <Text style={{ color: textColor }}>Location Settings</Text>
             <View style={styles.settingItemContent}>
-              <Text style={{ color: textColor }}>Location Access</Text>
-              {hasLocationPermission && (
-                <Ionicons 
-                  name="checkmark-circle" 
-                  size={24} 
-                  color="green" 
-                  style={{ marginLeft: 8 }}
-                />
-              )}
+              <Ionicons name="chevron-forward" size={24} color={textColor} />
             </View>
-            <Switch
-              value={hasLocationPermission}
-              onValueChange={toggleLocationAccess}
-              trackColor={{ false: '#767577', true: '#34c759' }}
-              thumbColor={'#ffffff'}
-              ios_backgroundColor="#767577"
-            />
-          </View>
+          </TouchableOpacity>
 
         </Animated.View>
 
@@ -501,6 +481,16 @@ const Settings = ({ bottomSheetRef, snapPoints, renderBackdrop }) => {
               hasReminderPermission={hasReminderPermission}
               toggleCalendarAccess={toggleCalendarAccess}
               toggleReminderAccess={toggleReminderAccess}
+              onBack={slideBackToMain}
+              textColor={textColor}
+              borderColor={borderColor}
+            />
+          )}
+          {currentMenu === 'location' && (
+            <LocationSettings
+              isDarkMode={isDarkMode}
+              hasLocationPermission={hasLocationPermission}
+              toggleLocationAccess={toggleLocationAccess}
               onBack={slideBackToMain}
               textColor={textColor}
               borderColor={borderColor}
