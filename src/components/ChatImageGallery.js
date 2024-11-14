@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image as ExpoImage } from 'expo-image';
 
 const { width } = Dimensions.get('window');
 const COLUMN_COUNT = 2;
@@ -14,11 +15,11 @@ const ChatImageGallery = ({
   onImagePress 
 }) => {
   const renderImage = ({ item }) => {
-    // Extract image URL from the message content
     const urlMatch = item.content.match(/src="([^"]+)"/);
     const imageUrl = urlMatch ? urlMatch[1] : null;
     
-    // Extract prompt from the message content
+    console.log('Image URL:', imageUrl);
+    
     const promptMatch = item.content.match(/data-revised-prompt="([^"]+)"/);
     const prompt = promptMatch ? promptMatch[1] : 'No prompt available';
 
@@ -29,10 +30,11 @@ const ChatImageGallery = ({
         style={styles.imageContainer}
         onPress={() => onImagePress?.(imageUrl, prompt)}
       >
-        <Image
+        <ExpoImage
           source={{ uri: imageUrl }}
           style={styles.image}
-          resizeMode="cover"
+          contentFit="cover"
+          transition={200}
         />
         <View style={[styles.promptOverlay, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)' }]}>
           <Text 
@@ -102,10 +104,12 @@ const styles = StyleSheet.create({
     margin: SPACING,
     borderRadius: 8,
     overflow: 'hidden',
+    backgroundColor: '#f0f0f0',
   },
   image: {
     width: '100%',
     height: '100%',
+    backgroundColor: '#e0e0e0',
   },
   promptOverlay: {
     position: 'absolute',
