@@ -7,6 +7,7 @@ import { useDrawerStatus } from '@react-navigation/drawer';
 import Animated, { withTiming, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import moment from 'moment-timezone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
 
 const CollapsibleSection = ({ title, isExpanded, onPress, children, borderColor, textColor, icon }) => {
   const rotateValue = useSharedValue(isExpanded ? 180 : 0);
@@ -60,6 +61,7 @@ const HamburgerMenu = ({ openSettings, navigation, selectedDate, setSelectedDate
   const { isDarkMode } = useTheme();
   const [expandedSection, setExpandedSection] = useState(null);
   const [timezone, setTimezone] = useState(moment.tz.guess());
+  const [memories, setMemories] = useState([]);
   
   const backgroundColor = isDarkMode ? '#1c1c1e' : 'white';
   const textColor = isDarkMode ? '#ffffff' : '#000000';
@@ -81,6 +83,21 @@ const HamburgerMenu = ({ openSettings, navigation, selectedDate, setSelectedDate
       }
     };
     loadTimezone();
+  }, []);
+
+  useEffect(() => {
+    const loadMemories = async () => {
+      try {
+        const fileInfo = await FileSystem.getInfoAsync(FileSystem.documentDirectory + 'memories.json');
+        if (fileInfo.exists) {
+          const content = await FileSystem.readAsStringAsync(FileSystem.documentDirectory + 'memories.json');
+          setMemories(JSON.parse(content));
+        }
+      } catch (error) {
+        console.error('Error loading memories:', error);
+      }
+    };
+    loadMemories();
   }, []);
 
   const handleSectionPress = (sectionName) => {
@@ -190,11 +207,21 @@ const HamburgerMenu = ({ openSettings, navigation, selectedDate, setSelectedDate
             textColor={textColor}
             icon={<Ionicons name="cube-outline" size={24} color={textColor} />}
           >
-            <View style={styles.placeholderContainer}>
-              <Text style={[styles.placeholderText, { color: textColor }]}>
-                Coming soon...
-              </Text>
-            </View>
+            <FlatList
+              data={memories}
+              renderItem={({ item }) => (
+                <View style={styles.memoryItem}>
+                  <Text style={[styles.memoryContent, { color: textColor }]}>
+                    {item.content}
+                  </Text>
+                  <Text style={[styles.memoryTimestamp, { color: textColor + '80' }]}>
+                    {moment(item.timestamp).format('LLL')}
+                  </Text>
+                </View>
+              )}
+              keyExtractor={(item, index) => index.toString()}
+              style={styles.chatList}
+            />
           </CollapsibleSection>
           
           <View style={expandedSection === 'memories' ? styles.spacer : null} />
@@ -297,6 +324,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 4,
     opacity: 0.7,
+  },
+  memoryItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  memoryContent: {
+    fontSize: 16,
+  },
+  memoryTimestamp: {
+    fontSize: 12,
+    marginTop: 4,
   },
 });
 

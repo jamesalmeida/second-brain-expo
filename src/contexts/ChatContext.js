@@ -13,7 +13,8 @@ import {
   openAIImageGenerationFunctions,
   calendarFunctions,
   reminderFunctions,
-  previousResponseFunction 
+  previousResponseFunction,
+  memoryFunctions 
 } from '../functions/openAIFunctions';
 
 // TOGGLE FOR WEB DEVELOPMENT ONLY - DISABLE IN PRODUCTION
@@ -40,6 +41,8 @@ export const ChatProvider = ({ children }) => {
   const [hiddenModels, setHiddenModels] = useState([]);
   const [timezone, setTimezone] = useState(moment.tz.guess());
   const [savedChatIds, setSavedChatIds] = useState(new Set());
+
+  const MEMORIES_FILE = FileSystem.documentDirectory + 'memories.json';
 
   useEffect(() => {
     const loadTimezone = async () => {
@@ -366,6 +369,25 @@ export const ChatProvider = ({ children }) => {
     return null;
   };
 
+  const saveMemory = async (memoryContent) => {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(MEMORIES_FILE);
+      let memories = [];
+      if (fileInfo.exists) {
+        const content = await FileSystem.readAsStringAsync(MEMORIES_FILE);
+        memories = JSON.parse(content);
+      }
+      const newMemory = {
+        content: memoryContent,
+        timestamp: new Date().toISOString()
+      };
+      memories.push(newMemory);
+      await FileSystem.writeAsStringAsync(MEMORIES_FILE, JSON.stringify(memories));
+    } catch (error) {
+      console.error('Error saving memory:', error);
+    }
+  };
+
   const sendMessageToOpenAI = async (userMessage) => {
     console.log('🚀 Message Flow: Starting message processing', {
       userMessage,
@@ -460,7 +482,8 @@ export const ChatProvider = ({ children }) => {
           ...previousResponseFunction.map(f => f.name),
           ...openAIImageGenerationFunctions.map(f => f.name),
           ...calendarFunctions.map(f => f.name),
-          ...reminderFunctions.map(f => f.name)
+          ...reminderFunctions.map(f => f.name),
+          ...memoryFunctions.map(f => f.name)
         ]
       });
 
@@ -469,14 +492,20 @@ export const ChatProvider = ({ children }) => {
         messages: [
           {
             role: "system",
-            content: `${contextMessage}\n\nPrevious messages for context: ${messages.slice(-3).map(m => `${m.role}: ${m.content}`).join('\n')}`
+            content: `${contextMessage}\n\nPrevious messages for context:\n${messages.slice(-3).map(m => `${m.role}: ${m.content}`).join('\n')}\n\nYou can use the following functions to assist the user:\n` +
+              memoryFunctions.map(f => `
+                Function Name: ${f.name}
+                Description: ${f.description}
+                Parameters: ${JSON.stringify(f.parameters)}
+              `).join('\n') +
+              `\n\nIf the user provides information you'd like to remember, respond by calling the 'saveMemory' function with the appropriate content.`
           },
           { 
             role: "user", 
             content: userMessage 
           }
         ],
-        functions: [...previousResponseFunction, ...openAIImageGenerationFunctions, ...calendarFunctions, ...reminderFunctions],
+        functions: [...previousResponseFunction, ...openAIImageGenerationFunctions, ...calendarFunctions, ...reminderFunctions, ...memoryFunctions],
         function_call: "auto"
       });
 
@@ -491,7 +520,8 @@ export const ChatProvider = ({ children }) => {
             args: functionArgs,
             isCalendarQuery: functionCall.name === "checkCalendar" && functionArgs?.isCalendarQuery,
             isImageGeneration: functionCall.name === "generateDallEImage" && functionArgs?.shouldGenerateImage,
-            isReminderQuery: functionCall.name === "checkReminders" && functionArgs?.isReminderQuery
+            isReminderQuery: functionCall.name === "checkReminders" && functionArgs?.isReminderQuery,
+            isSaveMemory: functionCall.name === "saveMemory"
           });
         } catch (parseError) {
           console.log('❌ Message Flow: Error parsing function arguments', {
@@ -500,6 +530,24 @@ export const ChatProvider = ({ children }) => {
             error: parseError.message
           });
           throw parseError;
+        }
+
+        if (functionCall.name === "saveMemory") {
+          const { memoryContent } = functionArgs;
+          await saveMemory(memoryContent);
+          const memorySavedMessage = { role: 'assistant', content: 'Memory Saved' };
+          const updatedChatsWithMemoryMessage = updatedChatsWithUserMessage.map(chat => 
+            chat.id === currentChatId 
+              ? { 
+                  ...chat, 
+                  messages: [...chat.messages, memorySavedMessage] 
+                }
+              : chat
+          );
+          setChats(updatedChatsWithMemoryMessage);
+          const updatedChat = updatedChatsWithMemoryMessage.find(chat => chat.id === currentChatId);
+          await saveChat(updatedChat);
+          // Continue processing the original user prompt
         }
 
         // Add more detailed logging for calendar queries
@@ -927,6 +975,24 @@ export const ChatProvider = ({ children }) => {
           await saveChat(updatedChat);
           setIsLoading(false);
           return;
+        } else if (functionCall.name === "saveMemory") {
+          const { memoryContent } = functionArgs;
+          await saveMemory(memoryContent);
+          const memorySavedMessage = { role: 'assistant', content: 'Memory Saved' };
+          const updatedChatsWithMemoryMessage = updatedChatsWithUserMessage.map(chat => 
+            chat.id === currentChatId 
+              ? { 
+                  ...chat, 
+                  messages: [...chat.messages, memorySavedMessage] 
+                }
+              : chat
+          );
+          setChats(updatedChatsWithMemoryMessage);
+          const updatedChat = updatedChatsWithMemoryMessage.find(chat => chat.id === currentChatId);
+          await saveChat(updatedChat);
+          
+          // Continue with the original response handling
+          // ... existing function call handling ...
         }
       } else {
         const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';

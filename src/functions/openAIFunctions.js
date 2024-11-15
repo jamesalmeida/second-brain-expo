@@ -165,3 +165,20 @@ export const previousResponseFunction = [
         }
     }
 ];
+
+export const memoryFunctions = [
+    {
+        name: "saveMemory",
+        description: "Save a memory based on the user input",
+        parameters: {
+            type: "object",
+            properties: {
+                memoryContent: {
+                    type: "string",
+                    description: "The content to save as memory"
+                }
+            },
+            required: ["memoryContent"]
+        }
+    }
+];
