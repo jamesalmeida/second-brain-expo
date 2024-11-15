@@ -57,12 +57,13 @@ const CollapsibleSection = ({ title, isExpanded, onPress, children, borderColor,
 };
 
 const HamburgerMenu = ({ openSettings, navigation, selectedDate, setSelectedDate }) => {
-  const { chats, currentChatId, setCurrentChatId, deleteChat } = useChat();
+  const { chats, currentChatId, setCurrentChatId, deleteChat, deleteMemory } = useChat();
   const { isDarkMode } = useTheme();
   const [expandedSection, setExpandedSection] = useState(null);
   const [timezone, setTimezone] = useState(moment.tz.guess());
   const [memories, setMemories] = useState([]);
-  
+  const [memoryUpdateTrigger, setMemoryUpdateTrigger] = useState(0);
+
   const backgroundColor = isDarkMode ? '#1c1c1e' : 'white';
   const textColor = isDarkMode ? '#ffffff' : '#000000';
   const borderColor = isDarkMode ? '#2c2c2e' : '#ccc';
@@ -86,19 +87,26 @@ const HamburgerMenu = ({ openSettings, navigation, selectedDate, setSelectedDate
   }, []);
 
   useEffect(() => {
-    const loadMemories = async () => {
-      try {
-        const fileInfo = await FileSystem.getInfoAsync(FileSystem.documentDirectory + 'memories.json');
-        if (fileInfo.exists) {
-          const content = await FileSystem.readAsStringAsync(FileSystem.documentDirectory + 'memories.json');
-          setMemories(JSON.parse(content));
-        }
-      } catch (error) {
-        console.error('Error loading memories:', error);
+    if (isDrawerOpen) {
+      loadMemories();
+    }
+  }, [isDrawerOpen]);
+
+  const loadMemories = async () => {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(FileSystem.documentDirectory + 'memories.json');
+      if (fileInfo.exists) {
+        const content = await FileSystem.readAsStringAsync(FileSystem.documentDirectory + 'memories.json');
+        const parsedMemories = JSON.parse(content);
+        const sortedMemories = parsedMemories.sort((a, b) => 
+          new Date(b.timestamp) - new Date(a.timestamp)
+        );
+        setMemories(sortedMemories);
       }
-    };
-    loadMemories();
-  }, []);
+    } catch (error) {
+      console.error('Error loading memories:', error);
+    }
+  };
 
   const handleSectionPress = (sectionName) => {
     setExpandedSection(expandedSection === sectionName ? null : sectionName);
@@ -132,6 +140,28 @@ const HamburgerMenu = ({ openSettings, navigation, selectedDate, setSelectedDate
         { 
           text: "Delete", 
           onPress: () => deleteChat(chatId),
+          style: "destructive"
+        }
+      ]
+    );
+  };
+
+  const handleDeleteMemory = (timestamp) => {
+    Alert.alert(
+      "Delete Memory",
+      "Are you sure you want to delete this memory?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        { 
+          text: "Delete", 
+          onPress: async () => {
+            await deleteMemory(timestamp);
+            const updatedMemories = memories.filter(memory => memory.timestamp !== timestamp);
+            setMemories(updatedMemories);
+          },
           style: "destructive"
         }
       ]
@@ -210,16 +240,24 @@ const HamburgerMenu = ({ openSettings, navigation, selectedDate, setSelectedDate
             <FlatList
               data={memories}
               renderItem={({ item }) => (
-                <View style={styles.memoryItem}>
-                  <Text style={[styles.memoryContent, { color: textColor }]}>
-                    {item.content}
-                  </Text>
-                  <Text style={[styles.memoryTimestamp, { color: textColor + '80' }]}>
-                    {moment(item.timestamp).format('LLL')}
-                  </Text>
+                <View style={[styles.memoryItem, { borderBottomColor: borderColor }]}>
+                  <View style={styles.memoryContent}>
+                    <Text style={[styles.memoryText, { color: textColor }]}>
+                      {item.content}
+                    </Text>
+                    <Text style={[styles.memoryTimestamp, { color: textColor + '80' }]}>
+                      {moment(item.timestamp).format('LLL')}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteMemory(item.timestamp)}
+                  >
+                    <Ionicons name="trash-outline" size={24} color={textColor} />
+                  </TouchableOpacity>
                 </View>
               )}
-              keyExtractor={(item, index) => index.toString()}
+              keyExtractor={(item) => item.timestamp}
               style={styles.chatList}
             />
           </CollapsibleSection>
@@ -326,11 +364,16 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   memoryItem: {
-    padding: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    paddingLeft: 20,
   },
   memoryContent: {
+    flex: 1,
+    padding: 15,
+  },
+  memoryText: {
     fontSize: 16,
   },
   memoryTimestamp: {

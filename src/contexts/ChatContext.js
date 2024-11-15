@@ -547,7 +547,7 @@ export const ChatProvider = ({ children }) => {
           setChats(updatedChatsWithMemoryMessage);
           const updatedChat = updatedChatsWithMemoryMessage.find(chat => chat.id === currentChatId);
           await saveChat(updatedChat);
-          // Continue processing the original user prompt
+          return;
         }
 
         // Add more detailed logging for calendar queries
@@ -990,9 +990,7 @@ export const ChatProvider = ({ children }) => {
           setChats(updatedChatsWithMemoryMessage);
           const updatedChat = updatedChatsWithMemoryMessage.find(chat => chat.id === currentChatId);
           await saveChat(updatedChat);
-          
-          // Continue with the original response handling
-          // ... existing function call handling ...
+          return;
         }
       } else {
         const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
@@ -1286,6 +1284,20 @@ export const ChatProvider = ({ children }) => {
     return savedChatIds.has(chatId);
   };
 
+  const deleteMemory = async (timestamp) => {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(MEMORIES_FILE);
+      if (fileInfo.exists) {
+        const content = await FileSystem.readAsStringAsync(MEMORIES_FILE);
+        const memories = JSON.parse(content);
+        const updatedMemories = memories.filter(memory => memory.timestamp !== timestamp);
+        await FileSystem.writeAsStringAsync(MEMORIES_FILE, JSON.stringify(updatedMemories));
+      }
+    } catch (error) {
+      console.error('Error deleting memory:', error);
+    }
+  };
+
   return (
     <ChatContext.Provider value={{ 
       chats, 
@@ -1316,6 +1328,7 @@ export const ChatProvider = ({ children }) => {
       toggleModelVisibility,
       getChatByDate,
       isChatSaved,
+      deleteMemory,
     }}>
       {children}
     </ChatContext.Provider>
