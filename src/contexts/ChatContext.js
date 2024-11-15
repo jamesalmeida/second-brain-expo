@@ -535,7 +535,7 @@ export const ChatProvider = ({ children }) => {
         if (functionCall.name === "saveMemory") {
           const { memoryContent } = functionArgs;
           await saveMemory(memoryContent);
-          const memorySavedMessage = { role: 'assistant', content: 'Memory Saved' };
+          const memorySavedMessage = { role: 'system', content: '💾 Memory Saved' };
           const updatedChatsWithMemoryMessage = updatedChatsWithUserMessage.map(chat => 
             chat.id === currentChatId 
               ? { 
@@ -978,7 +978,7 @@ export const ChatProvider = ({ children }) => {
         } else if (functionCall.name === "saveMemory") {
           const { memoryContent } = functionArgs;
           await saveMemory(memoryContent);
-          const memorySavedMessage = { role: 'assistant', content: 'Memory Saved' };
+          const memorySavedMessage = { role: 'system', content: '💾 Memory Saved' };
           const updatedChatsWithMemoryMessage = updatedChatsWithUserMessage.map(chat => 
             chat.id === currentChatId 
               ? { 
