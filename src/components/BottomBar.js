@@ -114,7 +114,7 @@ const BottomBar = forwardRef((props, ref) => {
               <Ionicons name="send" size={24} color={isDarkMode ? '#fff' : '#000'} />
             </TouchableOpacity>
           </Animated.View>
-          <TouchableOpacity onPress={handleVoiceInput} style={styles.iconButton}>
+          {/* <TouchableOpacity onPress={handleVoiceInput} style={styles.iconButton}>
             {isRecording ? (
               <View style={styles.recordingButton}>
                 <Ionicons name="stop" size={16} color="#fff" />
@@ -122,7 +122,7 @@ const BottomBar = forwardRef((props, ref) => {
             ) : (
               <Ionicons name="mic-outline" size={24} color={isDarkMode ? '#fff' : '#000'} />
             )}
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
       <ChatOptionsSheet
