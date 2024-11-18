@@ -180,5 +180,26 @@ export const memoryFunctions = [
             },
             required: ["memoryContent"]
         }
+    },
+    {
+        name: "checkMemories",
+        description: "Check saved memories for relevant context",
+        parameters: {
+            type: "object",
+            properties: {
+                shouldCheckMemories: {
+                    type: "boolean",
+                    description: "Whether the response requires checking saved memories"
+                },
+                searchTerms: {
+                    type: "array",
+                    items: {
+                        type: "string"
+                    },
+                    description: "Key terms to search for in memories"
+                }
+            },
+            required: ["shouldCheckMemories", "searchTerms"]
+        }
     }
 ];

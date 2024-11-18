@@ -492,13 +492,7 @@ export const ChatProvider = ({ children }) => {
         messages: [
           {
             role: "system",
-            content: `${contextMessage}\n\nPrevious messages for context:\n${messages.slice(-3).map(m => `${m.role}: ${m.content}`).join('\n')}\n\nYou can use the following functions to assist the user:\n` +
-              memoryFunctions.map(f => `
-                Function Name: ${f.name}
-                Description: ${f.description}
-                Parameters: ${JSON.stringify(f.parameters)}
-              `).join('\n') +
-              `\n\nIf the user provides information you'd like to remember, respond by calling the 'saveMemory' function with the appropriate content.`
+            content: `${contextMessage}\n\nPrevious messages for context:\n${messages.slice(-3).map(m => `${m.role}: ${m.content}`).join('\n')}\n\nYou can:\n1. Save new memories using the 'saveMemory' function\n2. Check existing memories using the 'checkMemories' function\n\nBefore responding, consider if the user's message might benefit from checking saved memories for context.`
           },
           { 
             role: "user", 
@@ -991,6 +985,51 @@ export const ChatProvider = ({ children }) => {
           const updatedChat = updatedChatsWithMemoryMessage.find(chat => chat.id === currentChatId);
           await saveChat(updatedChat);
           return;
+        } else if (functionCall.name === "checkMemories") {
+          const { shouldCheckMemories, searchTerms } = functionArgs;
+          
+          if (shouldCheckMemories) {
+            const relevantMemories = await searchMemories(searchTerms);
+            
+            let memoryContext = '';
+            if (relevantMemories.length > 0) {
+              memoryContext = 'Related memories:\n' + 
+                relevantMemories.map(memory => 
+                  `[${new Date(memory.timestamp).toLocaleString()}] ${memory.content}`
+                ).join('\n');
+            }
+            
+            // Create a new completion with memory context
+            const completionWithMemories = await openai.chat.completions.create({
+              model: modelToUse,
+              messages: [
+                {
+                  role: "system",
+                  content: `${contextMessage}\n\n${memoryContext}`
+                },
+                ...messages.slice(-3), // Keep last 3 messages for context
+                { 
+                  role: "user", 
+                  content: userMessage 
+                }
+              ]
+            });
+
+            const aiMessage = completionWithMemories.choices[0].message.content;
+            
+            // Update chat with AI response
+            const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
+              chat.id === currentChatId 
+                ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
+                : chat
+            );
+            setChats(updatedChatsWithAIResponse);
+            
+            // Save the updated chat
+            const updatedChat = updatedChatsWithAIResponse.find(chat => chat.id === currentChatId);
+            await saveChat(updatedChat);
+            return;
+          }
         }
       } else {
         const apiModel = modelMap[currentModel] || 'gpt-3.5-turbo';
@@ -1298,6 +1337,36 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const searchMemories = async (searchTerms) => {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(MEMORIES_FILE);
+      if (!fileInfo.exists) {
+        return [];
+      }
+      
+      const content = await FileSystem.readAsStringAsync(MEMORIES_FILE);
+      const memories = JSON.parse(content);
+      
+      // Convert search terms to lowercase for case-insensitive matching
+      const lowercaseTerms = searchTerms.map(term => term.toLowerCase());
+      
+      // Filter memories that contain any of the search terms
+      const relevantMemories = memories.filter(memory => 
+        lowercaseTerms.some(term => 
+          memory.content.toLowerCase().includes(term)
+        )
+      );
+      
+      // Sort by timestamp, most recent first
+      return relevantMemories.sort((a, b) => 
+        new Date(b.timestamp) - new Date(a.timestamp)
+      );
+    } catch (error) {
+      console.error('Error searching memories:', error);
+      return [];
+    }
+  };
+
   return (
     <ChatContext.Provider value={{ 
       chats, 
@@ -1329,6 +1398,7 @@ export const ChatProvider = ({ children }) => {
       getChatByDate,
       isChatSaved,
       deleteMemory,
+      searchMemories,
     }}>
       {children}
     </ChatContext.Provider>
