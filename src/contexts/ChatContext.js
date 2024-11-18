@@ -989,6 +989,15 @@ export const ChatProvider = ({ children }) => {
           const { shouldCheckMemories, searchTerms } = functionArgs;
           
           if (shouldCheckMemories) {
+            // Add system message for memory access
+            const memoryAccessMessage = { role: 'system', content: '🧠 Accessing Memories' };
+            const updatedChatsWithAccessMessage = updatedChatsWithUserMessage.map(chat => 
+              chat.id === currentChatId 
+                ? { ...chat, messages: [...chat.messages, memoryAccessMessage] }
+                : chat
+            );
+            setChats(updatedChatsWithAccessMessage);
+            
             const relevantMemories = await searchMemories(searchTerms);
             
             let memoryContext = '';
@@ -1017,8 +1026,8 @@ export const ChatProvider = ({ children }) => {
 
             const aiMessage = completionWithMemories.choices[0].message.content;
             
-            // Update chat with AI response
-            const updatedChatsWithAIResponse = updatedChatsWithUserMessage.map(chat => 
+            // Update chat with AI response, keeping the memory access message
+            const updatedChatsWithAIResponse = updatedChatsWithAccessMessage.map(chat => 
               chat.id === currentChatId 
                 ? { ...chat, messages: [...chat.messages, { role: 'assistant', content: aiMessage }] }
                 : chat
