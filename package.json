@@ -33,7 +33,8 @@
     "react-native-screens": "3.31.1",
     "react-native-web": "~0.19.6",
     "@react-native-community/datetimepicker": "8.0.1",
-    "expo-image-picker": "~15.0.7"
+    "expo-image-picker": "~15.0.7",
+    "expo-document-picker": "~12.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.19.3"
