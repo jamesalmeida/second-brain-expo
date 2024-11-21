@@ -83,7 +83,7 @@ const BottomBar = forwardRef((props, ref) => {
             onPress={handleOptionsPress}
             style={styles.iconButton}
           >
-            <Ionicons name="hardware-chip-outline" size={24} color={isDarkMode ? '#fff' : '#000'} />
+            <Ionicons name="add-circle-outline" size={24} color={isDarkMode ? '#fff' : '#000'} />
           </TouchableOpacity>
           <TextInput
             ref={inputRef}
