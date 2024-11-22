@@ -1,9 +1,14 @@
-import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, Animated, Keyboard } from 'react-native';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle, useMemo } from 'react';
+import { View, TextInput, TouchableOpacity, StyleSheet, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import { useTheme } from '../contexts/ThemeContext';
 import ChatOptionsSheet from './ChatOptionsSheet';
+import Animated, { 
+  useAnimatedStyle, 
+  withTiming,
+  useSharedValue 
+} from 'react-native-reanimated';
 
 const BottomBar = forwardRef((props, ref) => {
   const { isDarkMode } = useTheme();
@@ -11,12 +16,12 @@ const BottomBar = forwardRef((props, ref) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const { sendMessageToOpenAI } = useChat();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
   const inputRef = useRef(null);
   const chatOptionsSheetRef = useRef(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const fadeValue = useSharedValue(0);
 
-  const snapPoints = ['60%'];
+  const snapPoints = useMemo(() => ['25%', '50%', '90%'], []);
 
   const handleSheetChanges = (index) => {
     console.log('handleSheetChanges called with index:', index);
@@ -44,12 +49,17 @@ const BottomBar = forwardRef((props, ref) => {
   }));
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: isInputFocused || message.trim().length > 0 ? 1 : 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
+    fadeValue.value = withTiming(
+      isInputFocused || message.trim().length > 0 ? 1 : 0,
+      { duration: 200 }
+    );
   }, [isInputFocused, message]);
+
+  const fadeStyle = useAnimatedStyle(() => {
+    return {
+      opacity: fadeValue.value
+    };
+  });
 
   const handleSend = () => {
     if (message.trim()) {
@@ -65,19 +75,17 @@ const BottomBar = forwardRef((props, ref) => {
   };
 
   const handleOptionsPress = () => {
-    console.log('💬 Chat Options button pressed');
     Keyboard.dismiss();
     setTimeout(() => {
       if (chatOptionsSheetRef.current) {
-        console.log('Attempting to open sheet...');
-        chatOptionsSheetRef.current.snapToIndex(0);
+        chatOptionsSheetRef.current.snapToIndex(2);
       }
     }, 100);
   };
 
   return (
     <View>
-      <View style={[styles.container, { backgroundColor: isDarkMode ? 'black' : 'white' }]}>
+      <View style={styles.container}>
         <View style={[styles.inputContainer, { borderColor: isDarkMode ? '#444' : '#ccc' }]}>
           <TouchableOpacity 
             onPress={handleOptionsPress}
@@ -109,20 +117,11 @@ const BottomBar = forwardRef((props, ref) => {
             caretHidden={false}
             spellCheck={false}
           />
-          <Animated.View style={{ opacity: fadeAnim }}>
-            <TouchableOpacity onPress={handleSend} style={styles.iconButton}>
+          <TouchableOpacity onPress={handleSend}>
+            <Animated.View style={[styles.iconButton, fadeStyle]}>
               <Ionicons name="send" size={24} color={isDarkMode ? '#fff' : '#000'} />
-            </TouchableOpacity>
-          </Animated.View>
-          {/* <TouchableOpacity onPress={handleVoiceInput} style={styles.iconButton}>
-            {isRecording ? (
-              <View style={styles.recordingButton}>
-                <Ionicons name="stop" size={16} color="#fff" />
-              </View>
-            ) : (
-              <Ionicons name="mic-outline" size={24} color={isDarkMode ? '#fff' : '#000'} />
-            )}
-          </TouchableOpacity> */}
+            </Animated.View>
+          </TouchableOpacity>
         </View>
       </View>
       <ChatOptionsSheet

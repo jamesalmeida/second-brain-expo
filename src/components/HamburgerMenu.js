@@ -10,10 +10,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 
 const CollapsibleSection = ({ title, isExpanded, onPress, children, borderColor, textColor, icon }) => {
-  const rotateValue = useSharedValue(isExpanded ? 180 : 0);
-  const heightValue = useSharedValue(isExpanded ? 570 : 0);
+  const rotateValue = useSharedValue(0);
+  const heightValue = useSharedValue(0);
 
   useEffect(() => {
+    'worklet';
     rotateValue.value = withTiming(isExpanded ? 180 : 0, {
       duration: 300,
     });

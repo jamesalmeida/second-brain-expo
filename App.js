@@ -1,6 +1,6 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { SafeAreaView, View, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { SafeAreaView, View, TouchableOpacity, Dimensions } from 'react-native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { NavigationContainer } from '@react-navigation/native';
 import { BottomSheetBackdrop } from '@gorhom/bottom-sheet';

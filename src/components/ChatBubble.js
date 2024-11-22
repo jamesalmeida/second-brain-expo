@@ -1,22 +1,25 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import Animated, { 
   useAnimatedStyle, 
   useSharedValue,
-  withSpring 
+  withSpring,
+  runOnJS
 } from 'react-native-reanimated';
 
 const ChatBubble = ({ message, styles, isDarkMode, handleLongPress, markdownRules }) => {
   const scale = useSharedValue(1);
 
-  const handlePressIn = () => {
+  const handlePressIn = useCallback(() => {
+    'worklet';
     scale.value = withSpring(0.98);
-  };
+  }, []);
 
-  const handlePressOut = () => {
+  const handlePressOut = useCallback(() => {
+    'worklet';
     scale.value = withSpring(1);
-  };
+  }, []);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
