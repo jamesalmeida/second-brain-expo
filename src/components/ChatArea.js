@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, Image, Keyboard, TouchableOpacity, Animated, ActivityIndicator, ActionSheetIOS, Share, Alert } from 'react-native';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, StyleSheet, Platform, Image, Keyboard, TouchableOpacity, ActivityIndicator, ActionSheetIOS, Share, Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
@@ -9,7 +9,13 @@ import { useTheme } from '../contexts/ThemeContext';
 import Markdown from 'react-native-markdown-display';
 import { Image as ExpoImage } from 'expo-image';
 import ImageMessage from './ImageMessage';
-import { useSharedValue } from 'react-native-reanimated';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  withSpring,
+  runOnJS 
+} from 'react-native-reanimated';
 import ChatBubble from './ChatBubble';
 import MapMessage from './MapMessage';
 
@@ -17,7 +23,7 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
   const { chats, currentChatId, isGeneratingImage, isLoading } = useChat();
   const scrollViewRef = useRef();
   const [isAtBottom, setIsAtBottom] = useState(true);
-  const logoScale = useRef(new Animated.Value(1)).current;
+  const logoScale = useSharedValue(1);
   const { isDarkMode } = useTheme();
   const [flippedMessageIndex, setFlippedMessageIndex] = useState(null);
 
@@ -47,22 +53,24 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
     }
   };
 
-  const handleLogoPress = () => {
-    Animated.sequence([
-      Animated.timing(logoScale, {
-        toValue: 0.9,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(logoScale, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      openSettings();
+  const handleLogoPress = useCallback(() => {
+    'worklet';
+    logoScale.value = withSpring(0.9, {}, (finished) => {
+      if (finished) {
+        logoScale.value = withSpring(1, {}, (finished) => {
+          if (finished) {
+            runOnJS(openSettings)();
+          }
+        });
+      }
     });
-  };
+  }, [openSettings]);
+
+  const logoStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: logoScale.value }]
+    };
+  });
 
   const markdownRules = {
     image: (node) => {
@@ -386,10 +394,12 @@ const ChatArea = ({ bottomBarRef, openSettings }) => {
         {messages.length === 0 ? (
           <View style={styles.emptyChatContainer}>
             <TouchableOpacity onPress={handleLogoPress} activeOpacity={0.8}>
-              <Animated.Image 
-                source={brainLogo} 
-                style={[styles.logo, { transform: [{ scale: logoScale }] }]} 
-              />
+              <Animated.View style={logoStyle}>
+                <Animated.Image 
+                  source={brainLogo} 
+                  style={[styles.logo, { transform: [{ scale: logoScale }] }]} 
+                />
+              </Animated.View>
             </TouchableOpacity>
           </View>
         ) : (

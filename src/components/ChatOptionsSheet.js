@@ -1,23 +1,54 @@
-import React, { memo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Animated } from 'react-native';
+import React, { memo, useState, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { useTheme } from '../contexts/ThemeContext';
 import { Portal } from '@gorhom/portal';
 import { useChat } from '../contexts/ChatContext';
+import Animated, { 
+  useAnimatedStyle, 
+  withTiming,
+  useSharedValue,
+  interpolate
+} from 'react-native-reanimated';
 
 const ChatOptionsSheet = memo(({ bottomSheetRef, snapPoints, handleSheetChanges }) => {
   const { isDarkMode } = useTheme();
-  const { 
-    availableModels, 
-    currentModel, 
-    setCurrentModel,
-    hiddenModels 
-  } = useChat();
+  const { availableModels, currentModel, setCurrentModel, hiddenModels } = useChat();
   const [currentView, setCurrentView] = useState('main');
-  const slideAnim = useState(new Animated.Value(0))[0];
+  const slideAnim = useSharedValue(0);
   const [isAnimatingSheet, setIsAnimatingSheet] = useState(false);
-  
+
+  const mainMenuStyle = useAnimatedStyle(() => {
+    const translateX = interpolate(
+      slideAnim.value,
+      [0, 1],
+      [0, -400]
+    );
+    return {
+      transform: [{ translateX }]
+    };
+  });
+
+  const modelMenuStyle = useAnimatedStyle(() => {
+    const translateX = interpolate(
+      slideAnim.value,
+      [0, 1],
+      [400, 0]
+    );
+    return {
+      transform: [{ translateX }]
+    };
+  });
+
+  const slideToModels = () => {
+    slideAnim.value = withTiming(1, { duration: 300 });
+  };
+
+  const slideBackToMain = () => {
+    slideAnim.value = withTiming(0, { duration: 300 });
+  };
+
   const backgroundColor = isDarkMode ? '#1c1c1e' : 'white';
   const textColor = isDarkMode ? '#ffffff' : '#000000';
 
@@ -30,7 +61,7 @@ const ChatOptionsSheet = memo(({ bottomSheetRef, snapPoints, handleSheetChanges 
     
     if (index === -1) {
       setTimeout(() => {
-        slideAnim.setValue(0);
+        slideAnim.value = 0;
         setCurrentView('main');
       }, 100);
     }
@@ -55,26 +86,6 @@ const ChatOptionsSheet = memo(({ bottomSheetRef, snapPoints, handleSheetChanges 
   const selectModel = (modelName) => {
     setCurrentModel(modelName);
     bottomSheetRef.current?.close();
-  };
-
-  const slideToModels = () => {
-    Animated.timing(slideAnim, {
-      toValue: -1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setCurrentView('models');
-    });
-  };
-
-  const slideBackToMain = () => {
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setCurrentView('main');
-    });
   };
 
   const renderModelItem = ({ item }) => (
@@ -107,19 +118,7 @@ const ChatOptionsSheet = memo(({ bottomSheetRef, snapPoints, handleSheetChanges 
         backgroundStyle={{ backgroundColor }}
       >
         <BottomSheetView style={[styles.bottomSheetContent, { backgroundColor }]}>
-          <Animated.View
-            style={[
-              styles.menuContainer,
-              {
-                transform: [{
-                  translateX: slideAnim.interpolate({
-                    inputRange: [-1, 0],
-                    outputRange: [-400, 0]
-                  })
-                }]
-              }
-            ]}
-          >
+          <Animated.View style={[styles.menuContainer, mainMenuStyle]}>
             <TouchableOpacity style={styles.option} onPress={slideToModels}>
               <Ionicons name="color-wand-outline" size={24} color={textColor} />
               <Text style={[styles.optionText, { color: textColor }]}>Choose AI Model</Text>
@@ -138,20 +137,7 @@ const ChatOptionsSheet = memo(({ bottomSheetRef, snapPoints, handleSheetChanges 
             {/* Add your other chat options here */}
           </Animated.View>
 
-          <Animated.View
-            style={[
-              styles.menuContainer,
-              styles.overlayMenu,
-              {
-                transform: [{
-                  translateX: slideAnim.interpolate({
-                    inputRange: [-1, 0],
-                    outputRange: [0, 400]
-                  })
-                }]
-              }
-            ]}
-          >
+          <Animated.View style={[styles.menuContainer, styles.overlayMenu, modelMenuStyle]}>
             <View style={styles.header}>
               <TouchableOpacity onPress={slideBackToMain} style={styles.backButton}>
                 <Ionicons name="chevron-back" size={24} color={textColor} />

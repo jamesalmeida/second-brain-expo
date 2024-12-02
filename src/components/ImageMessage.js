@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import Animated, { 
@@ -24,21 +24,24 @@ const ImageMessage = ({
   const revisedPromptMatch = message.content.match(/data-revised-prompt="([^"]+)"/);
   const revisedPrompt = revisedPromptMatch ? revisedPromptMatch[1] : null;
   
-  const handlePressIn = () => {
+  const handlePressIn = useCallback(() => {
+    'worklet';
     scale.value = withSpring(0.98);
-  };
+  }, []);
 
-  const handlePressOut = () => {
+  const handlePressOut = useCallback(() => {
+    'worklet';
     scale.value = withSpring(1);
-  };
+  }, []);
 
-  const handleFlipBack = () => {
+  const handleFlipBack = useCallback(() => {
+    'worklet';
     flipAnimation.value = withTiming(0, { duration: 500 }, (finished) => {
       if (finished) {
         runOnJS(onFlipEnd)();
       }
     });
-  };
+  }, [onFlipEnd]);
   
   useEffect(() => {
     if (isFlipped) {
@@ -125,8 +128,8 @@ const ImageMessage = ({
     <TouchableOpacity
       onPress={handlePress}
       onLongPress={() => handleLongPress(message, isFlipped)}
-      onPressIn={() => handlePressIn()}
-      onPressOut={() => handlePressOut()}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       delayLongPress={200}
       activeOpacity={1}
     >

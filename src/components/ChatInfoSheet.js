@@ -1,11 +1,16 @@
 import React, { useCallback, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Portal } from '@gorhom/portal';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
 import moment from 'moment-timezone';
 import ChatImageGallery from './ChatImageGallery';
+import Animated, { 
+  useAnimatedStyle, 
+  withSpring,
+  useSharedValue 
+} from 'react-native-reanimated';
 
 const InfoRow = ({ label, value, icon, isDarkMode }) => (
   <View style={styles.infoRow}>
@@ -23,10 +28,8 @@ const ChatInfoSheet = ({
   selectedDate 
 }) => {
   const { chats, currentChatId, currentModel } = useChat();
-  const currentChat = chats.find(chat => chat.id === currentChatId);
-
   const [showGallery, setShowGallery] = useState(false);
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideOffset = useSharedValue(0);
 
   const renderBackdrop = useCallback(
     props => (
@@ -39,7 +42,7 @@ const ChatInfoSheet = ({
     []
   );
 
-  const calculateChatStats = () => {
+  const calculateChatStats = useCallback(() => {
     if (!currentChat?.messages) return null;
 
     const messages = currentChat.messages;
@@ -61,26 +64,25 @@ const ChatInfoSheet = ({
       firstMessageTime,
       lastMessageTime
     };
-  };
+  }, [currentChat]);
+
+  const currentChat = chats.find(chat => chat.id === currentChatId);
+  if (!currentChat) return null;
 
   const stats = calculateChatStats();
   if (!stats) return null;
 
   const showGalleryView = () => {
     setShowGallery(true);
-    Animated.timing(slideAnim, {
-      toValue: -400, // Adjust based on your needs
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    slideOffset.value = withSpring(-400);
   };
 
   const hideGalleryView = () => {
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => setShowGallery(false));
+    slideOffset.value = withSpring(0, {}, (finished) => {
+      if (finished) {
+        setShowGallery(false);
+      }
+    });
   };
 
   const getImagesFromChat = () => {
@@ -89,6 +91,24 @@ const ChatInfoSheet = ({
       m.role === 'assistant' && m.content.includes('<img')
     );
   };
+
+  const slideAnimStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: slideOffset.value }]
+    };
+  });
+
+  const galleryAnimStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: slideOffset.value + 400 }],
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: isDarkMode ? '#1c1c1e' : 'white'
+    };
+  });
 
   return (
     <Portal>
@@ -118,7 +138,7 @@ const ChatInfoSheet = ({
 
           <Animated.View style={[
             styles.infoContainer,
-            { transform: [{ translateX: slideAnim }] }
+            slideAnimStyle
           ]}>
             <ScrollView style={styles.content}>
               <View style={styles.section}>
@@ -191,18 +211,7 @@ const ChatInfoSheet = ({
             </ScrollView>
           </Animated.View>
 
-          <Animated.View style={[
-            styles.galleryContainer,
-            { 
-              transform: [{ translateX: Animated.add(slideAnim, 400) }],
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: isDarkMode ? '#1c1c1e' : 'white'
-            }
-          ]}>
+          <Animated.View style={[styles.galleryContainer, galleryAnimStyle]}>
             {showGallery && (
               <ChatImageGallery
                 images={getImagesFromChat()}

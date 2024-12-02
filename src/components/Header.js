@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../contexts/ChatContext';
@@ -15,7 +15,7 @@ const Header = ({ navigation, selectedDate, setSelectedDate }) => {
   const calendarSnapPoints = ['93%'];
   const [timezone, setTimezone] = useState(moment.tz.guess());
   const chatInfoSheetRef = useRef(null);
-  const chatInfoSnapPoints = ['70%'];
+  const chatInfoSnapPoints = useMemo(() => ['50%','90%'], []);
 
   useEffect(() => {
     const loadTimezone = async () => {
@@ -55,7 +55,7 @@ const Header = ({ navigation, selectedDate, setSelectedDate }) => {
 
   const handleOpenChatInfo = () => {
     Keyboard.dismiss();
-    chatInfoSheetRef.current?.snapToIndex(0);
+    chatInfoSheetRef.current?.snapToIndex(2);
   };
 
   return (
