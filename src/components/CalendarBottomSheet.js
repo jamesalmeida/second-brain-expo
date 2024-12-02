@@ -293,7 +293,7 @@ const CalendarBottomSheet = ({
     return (
       <View style={[styles.emptyDate, { backgroundColor: isDarkMode ? '#2c2c2e' : '#f2f2f7' }]}>
         <Text style={{ color: isDarkMode ? '#ffffff80' : '#00000080' }}>
-          No events scheduled
+          {isLoading ? 'Checking Calendar' : 'No events scheduled'}
         </Text>
       </View>
     );
@@ -373,7 +373,6 @@ const CalendarBottomSheet = ({
             refreshControl={null}
             refreshing={isLoading}
             loadItemsForMonth={loadItemsForMonth}
-            refreshing={false}
             style={{
               backgroundColor: isDarkMode ? '#1c1c1e' : 'white'
             }}
